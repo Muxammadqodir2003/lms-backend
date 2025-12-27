@@ -1,0 +1,109 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                String             @id @default(uuid())
+  email             String             @unique
+  role              Role               @default(STUDENT)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  password          String
+  token             Token?
+  instructorProfile InstructorProfile?
+  enrollments       Enrollement[]
+}
+
+enum Role {
+  STUDENT
+  ADMIN
+  INSTRUCTOR
+}
+
+model Token {
+  id           String @id @default(uuid())
+  refreshToken String @unique
+  userId       String
+  user         User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId])
+}
+
+model InstructorProfile {
+  firstName String
+  lastName  String
+  job       String
+  language  String
+  social    String
+  userId    String
+  isActive  Boolean  @default(false)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courses   Course[]
+
+  @@unique([userId])
+}
+
+model Course {
+  id           Int       @id @default(autoincrement())
+  slug         String    @unique
+  title        String
+  subTitle     String
+  whatsLearn   String[]
+  requirements String[]
+  tags         String[]
+  description  String
+  level        String
+  category     String
+  price        Int
+  language     String
+  image        String
+  sections     Section[]
+  isPublished  Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  instructorId String
+  instructor   InstructorProfile @relation(fields: [instructorId], references: [userId], onDelete: Cascade)
+
+  enrollments Enrollement[]
+}
+
+model Section {
+  id       Int      @id @default(autoincrement())
+  name     String
+  courseId Int
+  course   Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons  Lesson[]
+}
+
+model Lesson {
+  id          Int     @id @default(autoincrement())
+  name        String
+  video       String
+  duration    Int
+  description String?
+  sectionId   Int
+  section     Section @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+}
+
+model Enrollement {
+  enrolledAt  DateTime  @default(now())
+  progress    Int       @default(0)
+  completedAt DateTime?
+  status      Status    @default(PENDING)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId    Int
+  course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+}
+
+enum Status {
+  PENDING
+  PAID
+}
