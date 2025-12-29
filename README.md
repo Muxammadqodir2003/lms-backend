@@ -35,19 +35,6 @@ designed to support educational platforms with role-based access and scalable ar
 
 ---
 
-## 📂 Project Structure
-
-src/
-├── auth/ # Auth logic (JWT, guards)
-├── users/ # User management
-├── courses/ # Courses
-├── enrollments/ # Enrollment logic
-├── section/ # Section
-├── lesson/ # Lesson 
-├── app.module.ts
-└── main.ts
-
-
 ---
 
 ## ⚙️ Environment Variables
