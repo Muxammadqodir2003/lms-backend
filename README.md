@@ -58,7 +58,7 @@ Create a `.env` file based on `.env.example`:
 PORT=3000
 JWT_SECRET=your_jwt_secret
 DATABASE_URL=your_database_url
-
+```
 
 ▶️ How to Run
 ```bash
