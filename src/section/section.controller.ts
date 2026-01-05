@@ -17,30 +17,43 @@ export class SectionController {
   constructor(private readonly sectionService: SectionService) {}
 
   @HttpCode(201)
-  @Post('create/:id')
+  @Post('create/:slug')
   @Auth('INSTRUCTOR')
-  async create(@Body() sectionDto: SectionDto, @Param('id') id: number) {
-    return this.sectionService.create(sectionDto, id);
+  async create(@Body() sectionDto: SectionDto, @Param('slug') slug: string) {
+    console.log(slug);
+    return this.sectionService.create(sectionDto, slug);
   }
 
   @HttpCode(200)
-  @Get('get-all/:courseId')
+  @Get('get-all/:slug')
   @Auth('INSTRUCTOR')
-  async getAll(@Param('courseId') courseId: string) {
-    return await this.sectionService.getAll(+courseId);
+  async getAll(@Param('slug') slug: string) {
+    return await this.sectionService.getAll(slug);
   }
 
   @HttpCode(200)
-  @Delete('delete/:id')
+  @Delete('delete/:sectionId')
   @Auth('INSTRUCTOR')
-  async delete(@Param('id') id: string) {
-    return await this.sectionService.delete(+id);
+  async delete(@Param('sectionId') sectionId: string) {
+    return await this.sectionService.delete(+sectionId);
   }
 
   @HttpCode(200)
-  @Patch('update/:id')
+  @Patch('update/:sectionId')
   @Auth('INSTRUCTOR')
-  async update(@Param('id') id: string, @Body() body: { name: string }) {
-    return await this.sectionService.update(+id, body.name);
+  async update(
+    @Param('sectionId') sectionId: string,
+    @Body() body: { name: string },
+  ) {
+    return await this.sectionService.update(+sectionId, body.name);
+  }
+
+  @HttpCode(200)
+  @Patch('reorder')
+  @Auth('INSTRUCTOR')
+  async reorder(
+    @Body() dto: { sections: { id: number; orderIndex: number }[] },
+  ) {
+    return await this.sectionService.reorder(dto.sections);
   }
 }

@@ -27,7 +27,7 @@ export class InstructorController {
   }
 
   @HttpCode(200)
-  @Get('course-all')
+  @Get('get-all')
   @Auth('INSTRUCTOR')
   async getAllCourses(@User('id') id: string) {
     return this.instructorService.getAllCourses(id);

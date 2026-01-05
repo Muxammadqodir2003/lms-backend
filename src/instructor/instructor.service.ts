@@ -45,7 +45,10 @@ export class InstructorService {
   }
 
   async getCourseDetail(slug: string) {
-    return await this.prismaService.course.findUnique({ where: { slug } });
+    return await this.prismaService.course.findUnique({
+      where: { slug },
+      include: { sections: { include: { lessons: true } } },
+    });
   }
 
   async getAllInstructor(limit?: number) {

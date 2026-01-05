@@ -6,14 +6,31 @@ import { SectionDto } from './dto/section.dto';
 export class SectionService {
   constructor(private readonly prismaService: PrismaService) {}
 
-  async create(sectionDto: SectionDto, courseId: number) {
+  async create(sectionDto: SectionDto, slug: string) {
+    const course = await this.prismaService.course.findUnique({
+      where: { slug },
+      include: { sections: true },
+    });
+
     return await this.prismaService.section.create({
-      data: { ...sectionDto, courseId },
+      data: {
+        name: sectionDto.name,
+        courseId: course.id,
+        orderIndex: course.sections.length + 1,
+      },
     });
   }
 
-  async getAll(courseId: number) {
-    return await this.prismaService.section.findMany({ where: { courseId } });
+  async getAll(slug: string) {
+    const course = await this.prismaService.course.findUnique({
+      where: { slug },
+      include: { sections: true },
+    });
+    return await this.prismaService.section.findMany({
+      where: { courseId: course.id },
+      include: { lessons: true },
+      orderBy: { orderIndex: 'asc' },
+    });
   }
 
   async delete(id: number) {
@@ -25,5 +42,16 @@ export class SectionService {
       where: { id },
       data: { name },
     });
+  }
+
+  async reorder(sections: { id: number; orderIndex: number }[]) {
+    return this.prismaService.$transaction(
+      sections.map((secton) =>
+        this.prismaService.section.update({
+          where: { id: secton.id },
+          data: { orderIndex: secton.orderIndex },
+        }),
+      ),
+    );
   }
 }

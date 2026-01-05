@@ -1,6 +1,8 @@
 import { IsNumber, IsString, MinLength } from 'class-validator';
 
 export class CourseDto {
+  @IsString()
+  @MinLength(5)
   slug: string;
 
   @IsString()
@@ -11,11 +13,14 @@ export class CourseDto {
   @MinLength(5)
   subTitle: string;
 
-  whatsLearn: string[];
+  @IsString()
+  whatsLearn: string;
 
-  requirements: string[];
+  @IsString()
+  requirements: string;
 
-  tags: string[];
+  @IsString()
+  tags: string;
 
   @IsString()
   @MinLength(5)
@@ -27,8 +32,8 @@ export class CourseDto {
   @IsString()
   category: string;
 
-  @IsNumber()
-  price: number;
+  @IsString()
+  price: string;
 
   @IsString()
   language: string;

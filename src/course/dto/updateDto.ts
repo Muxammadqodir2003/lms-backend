@@ -1,13 +1,46 @@
+import { IsNumber, IsOptional, IsString, MinLength } from 'class-validator';
+
 export class UpdateDto {
-  slug?: string;
+  @IsOptional()
+  @IsString()
+  @MinLength(5)
   title?: string;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(5)
   subTitle?: string;
-  whatsLearn?: string[];
-  requirements?: string[];
-  tags?: string[];
+
+  @IsOptional()
+  @IsString()
+  whatsLearn?: string;
+
+  @IsOptional()
+  @IsString()
+  requirements?: string;
+
+  @IsOptional()
+  @IsString()
+  tags?: string;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(5)
   description?: string;
+
+  @IsOptional()
+  @IsString()
   level?: string;
+
+  @IsOptional()
+  @IsString()
   category?: string;
-  price?: number;
+
+  @IsOptional()
+  @IsString()
+  price?: string;
+
+  @IsOptional()
+  @IsString()
   language?: string;
 }

@@ -6,9 +6,24 @@ import { LessonDto } from './dto/lesson.dto';
 export class LessonService {
   constructor(private readonly prismaService: PrismaService) {}
 
-  async createLesson(lessonDto: LessonDto, video: string, sectionId: number) {
+  async createLesson(
+    lessonDto: LessonDto,
+    video: string,
+    sectionId: number,
+    duration: number,
+  ) {
+    const section = await this.prismaService.section.findUnique({
+      where: { id: sectionId },
+      include: { lessons: true },
+    });
     return await this.prismaService.lesson.create({
-      data: { ...lessonDto, video, sectionId },
+      data: {
+        ...lessonDto,
+        video,
+        sectionId,
+        orderIndex: section.lessons.length + 1,
+        duration,
+      },
     });
   }
 
@@ -20,10 +35,35 @@ export class LessonService {
     return this.prismaService.lesson.delete({ where: { id: lessonId } });
   }
 
-  async updateLesson(lessonDto: LessonDto, video: string, lessonId: number) {
+  async reorderLesson(lessons: { id: number; orderIndex: number }[]) {
+    return this.prismaService.$transaction(
+      lessons.map((lesson) =>
+        this.prismaService.lesson.update({
+          where: { id: lesson.id },
+          data: { orderIndex: lesson.orderIndex },
+        }),
+      ),
+    );
+  }
+
+  async updateLesson(
+    lessonDto: LessonDto,
+    video: string,
+    lessonId: number,
+    duration: number,
+  ) {
+    const lesson = await this.prismaService.lesson.findUnique({
+      where: { id: lessonId },
+    });
+    if (!video) {
+      return await this.prismaService.lesson.update({
+        where: { id: lessonId },
+        data: { ...lessonDto, duration: lesson.duration, video: lesson.video },
+      });
+    }
     return await this.prismaService.lesson.update({
       where: { id: lessonId },
-      data: { ...lessonDto, video },
+      data: { ...lessonDto, duration: duration, video },
     });
   }
 }

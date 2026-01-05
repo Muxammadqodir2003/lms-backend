@@ -28,7 +28,7 @@ export class CourseController {
   @UseInterceptors(
     FileInterceptor('image', {
       storage: diskStorage({
-        destination: './public/uploads/images',
+        destination: 'public/uploads/images',
         filename(req, file, callback) {
           const uniqueSuffix =
             Date.now() + '-' + Math.round(Math.random() * 1e9);
@@ -43,7 +43,8 @@ export class CourseController {
     @User('id') id: string,
     @UploadedFile() image: Express.Multer.File,
   ) {
-    const imageUrl = `/uploads/images/${image.filename}`;
+    const imageUrl = `public/uploads/images/${image.filename}`;
+    console.log(courseDto, imageUrl, id);
     return this.courseService.createCourse(courseDto, imageUrl, id);
   }
 
@@ -52,8 +53,9 @@ export class CourseController {
   @UseInterceptors(
     FileInterceptor('image', {
       storage: diskStorage({
-        destination: './public/uploads/images',
+        destination: 'public/uploads/images',
         filename(req, file, callback) {
+          if (!file) return callback(null, '');
           const uniqueSuffix =
             Date.now() + '-' + Math.round(Math.random() * 1e9);
           callback(null, uniqueSuffix + extname(file.originalname));
@@ -64,17 +66,12 @@ export class CourseController {
   @Auth('INSTRUCTOR')
   async updateCourse(
     @Body() updateDto: UpdateDto,
-    @User('id') instructorId: string,
     @Param('courseId') courseId: string,
-    @UploadedFile() image: Express.Multer.File,
+    @UploadedFile() image?: Express.Multer.File,
   ) {
-    const imageUrl = `/uploads/images/${image.filename}`;
-    return this.courseService.updateCourse(
-      updateDto,
-      imageUrl,
-      +courseId,
-      instructorId,
-    );
+    const imageUrl = `public/uploads/images/${image?.filename}`;
+    console.log(updateDto);
+    return this.courseService.updateCourse(updateDto, imageUrl, +courseId);
   }
 
   @HttpCode(200)
