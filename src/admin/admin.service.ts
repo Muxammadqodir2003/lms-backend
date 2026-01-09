@@ -12,7 +12,6 @@ export class AdminService {
   async approveInstructor(id: string, adminEmail: string) {
     const user = await this.prismaService.user.findUnique({ where: { id } });
     if (!user) throw new BadRequestException('Bunday user topilmadi');
-
     await this.prismaService.user.update({
       where: { id: user.id },
       data: { role: 'INSTRUCTOR' },

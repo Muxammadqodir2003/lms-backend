@@ -30,19 +30,22 @@ export class InstructorController {
   @Get('get-all')
   @Auth('INSTRUCTOR')
   async getAllCourses(@User('id') id: string) {
-    return this.instructorService.getAllCourses(id);
+    return await this.instructorService.getAllCourses(id);
   }
 
   @HttpCode(200)
   @Get('course/:slug')
   @Auth('INSTRUCTOR')
   async getCourseDetail(@Param('slug') slug: string) {
-    return this.instructorService.getCourseDetail(slug);
+    return await this.instructorService.getCourseDetail(slug);
   }
 
   @HttpCode(200)
   @Get('all')
-  async getAllInstructor(@Query('limit') limit: number) {
-    return this.instructorService.getAllInstructor(limit);
+  async getAllInstructor(
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ) {
+    return await this.instructorService.getAllInstructor(+page, +limit);
   }
 }

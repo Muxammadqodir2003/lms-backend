@@ -9,7 +9,10 @@ export class AdminController {
 
   @Post('approve-instructor/:id')
   @Auth('ADMIN')
-  async approveInstructor(@Param() id: string, @User('email') email: string) {
+  async approveInstructor(
+    @Param('id') id: string,
+    @User('email') email: string,
+  ) {
     return this.adminService.approveInstructor(id, email);
   }
 
