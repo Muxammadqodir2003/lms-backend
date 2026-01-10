@@ -61,6 +61,7 @@ model Course {
   price        Int
   language     String
   image        String
+  rating       Int?
   sections     Section[]
   isPublished  Boolean   @default(false)
   createdAt    DateTime  @default(now())
@@ -73,12 +74,12 @@ model Course {
 }
 
 model Section {
-  id       Int      @id @default(autoincrement())
-  name     String
-  orderIndex    Int
-  courseId Int
-  course   Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  lessons  Lesson[]
+  id         Int      @id @default(autoincrement())
+  name       String
+  orderIndex Int
+  courseId   Int
+  course     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons    Lesson[]
 }
 
 model Lesson {
@@ -87,7 +88,7 @@ model Lesson {
   video       String
   duration    Int
   description String?
-  orderIndex       Int
+  orderIndex  Int
   sectionId   Int
   section     Section @relation(fields: [sectionId], references: [id], onDelete: Cascade)
 }

@@ -7,6 +7,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
@@ -18,6 +19,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { UpdateDto } from './dto/updateDto';
+import { CourseFiltersDto } from './dto/courseFilterDto';
 
 @Controller('course')
 export class CourseController {
@@ -44,8 +46,7 @@ export class CourseController {
     @UploadedFile() image: Express.Multer.File,
   ) {
     const imageUrl = `public/uploads/images/${image.filename}`;
-    console.log(courseDto, imageUrl, id);
-    return this.courseService.createCourse(courseDto, imageUrl, id);
+    return await this.courseService.createCourse(courseDto, imageUrl, id);
   }
 
   @HttpCode(200)
@@ -70,21 +71,32 @@ export class CourseController {
     @UploadedFile() image?: Express.Multer.File,
   ) {
     const imageUrl = `public/uploads/images/${image?.filename}`;
-    console.log(updateDto);
-    return this.courseService.updateCourse(updateDto, imageUrl, +courseId);
+    return await this.courseService.updateCourse(
+      updateDto,
+      imageUrl,
+      +courseId,
+    );
   }
 
   @HttpCode(200)
   @Get('course/:slug')
   @Auth('STUDENT')
   async getCourse(@Param('slug') slug: string) {
-    return this.courseService.getCourse(slug);
+    return await this.courseService.getCourse(slug);
+  }
+
+  @HttpCode(200)
+  @Get('get-all-courses')
+  @Auth('STUDENT')
+  async getAllCourses(@Query() query: any) {
+    console.log(query);
+    return await this.courseService.getAllCourses(query);
   }
 
   @HttpCode(200)
   @Delete('delete/:id')
   @Auth('INSTRUCTOR')
   async deleteCourse(@Param('id') id: string) {
-    return this.courseService.delete(+id);
+    return await this.courseService.delete(+id);
   }
 }

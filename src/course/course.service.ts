@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CourseDto } from './dto/courseDto';
 import { UpdateDto } from './dto/updateDto';
+import { CourseFiltersDto } from './dto/courseFilterDto';
 
 @Injectable()
 export class CourseService {
@@ -15,10 +16,10 @@ export class CourseService {
     const instructor = await this.prismaService.instructorProfile.findUnique({
       where: { userId: instructorId },
     });
-    // if (!instructor.isActive)
-    //   throw new BadRequestException(
-    //     'Siz hozirda kurs joylay olmaysiz sizning hisobingiz faollashtirilmagan iltimos admin sizni hisobingizni faollashtirirshini kuting',
-    //   );
+    if (!instructor.isActive)
+      throw new BadRequestException(
+        'Siz hozirda kurs joylay olmaysiz sizning hisobingiz faollashtirilmagan iltimos admin sizni hisobingizni faollashtirirshini kuting',
+      );
     let course = await this.prismaService.course.findUnique({
       where: { slug: courseDto.slug },
     });
@@ -63,6 +64,30 @@ export class CourseService {
       where: { courseId: course.id },
     });
     return { ...course, studentsCount };
+  }
+
+  async getAllCourses(query: any) {
+    const courses = await this.prismaService.course.findMany({
+      where: {
+        category: query.category ? query.category : undefined,
+        level: query.level ? query.level : undefined,
+        language: query.language ? query.language : undefined,
+        rating: query.rating ? Number(query.rating) : undefined,
+        // isPublished: false,
+      },
+      skip: query.page ? (query.page - 1) * 10 : undefined,
+      take: 10,
+    });
+    const totalCourses = await this.prismaService.course.count({
+      where: {
+        category: query.category ? query.category : undefined,
+        level: query.level ? query.level : undefined,
+        language: query.language ? query.language : undefined,
+        rating: query.rating ? Number(query.rating) : undefined,
+        // isPublished: false,
+      },
+    });
+    return { courses, totalCourses };
   }
 
   async delete(id: number) {
