@@ -79,7 +79,7 @@ export class CourseController {
   }
 
   @HttpCode(200)
-  @Get('course/:slug')
+  @Get('get-course-by-slug/:slug')
   @Auth('STUDENT')
   async getCourse(@Param('slug') slug: string) {
     return await this.courseService.getCourse(slug);

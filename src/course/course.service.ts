@@ -59,6 +59,13 @@ export class CourseService {
   async getCourse(slug: string) {
     const course = await this.prismaService.course.findUnique({
       where: { slug },
+      include: {
+        sections: {
+          include: {
+            lessons: true,
+          },
+        },
+      },
     });
     const studentsCount = await this.prismaService.enrollement.count({
       where: { courseId: course.id },

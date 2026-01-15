@@ -67,4 +67,10 @@ export class InstructorService {
       select: { id: true, email: true, instructorProfile: true },
     });
   }
+
+  async getInstructorById(id: string) {
+    return await this.prismaService.instructorProfile.findUnique({
+      where: { userId: id },
+    });
+  }
 }

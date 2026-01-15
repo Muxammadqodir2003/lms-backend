@@ -29,7 +29,7 @@ export class InstructorController {
   @HttpCode(200)
   @Get('get-all')
   @Auth('INSTRUCTOR')
-  async getAllCourses(@User('id') id: string) {
+  async getAllCourses(@User('instructorId') id: string) {
     return await this.instructorService.getAllCourses(id);
   }
 
@@ -47,5 +47,11 @@ export class InstructorController {
     @Query('limit') limit: string,
   ) {
     return await this.instructorService.getAllInstructor(+page, +limit);
+  }
+
+  @HttpCode(200)
+  @Get('get-by-id/:id')
+  async getInstructorById(@Param('id') id: string) {
+    return await this.instructorService.getInstructorById(id);
   }
 }
