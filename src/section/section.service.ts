@@ -33,6 +33,17 @@ export class SectionService {
     });
   }
 
+  async getByCourseSlug(slug: string) {
+    const course = await this.prismaService.course.findUnique({
+      where: { slug },
+    });
+    return await this.prismaService.section.findMany({
+      where: { courseId: course.id },
+      include: { lessons: true },
+      orderBy: { orderIndex: 'asc' },
+    });
+  }
+
   async delete(id: number) {
     return await this.prismaService.section.delete({ where: { id } });
   }

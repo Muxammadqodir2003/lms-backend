@@ -31,6 +31,22 @@ export class LessonService {
     return this.prismaService.lesson.findMany({ where: { sectionId } });
   }
 
+  async getLessonById(lessonId: number) {
+    return this.prismaService.lesson.findUnique({ where: { id: lessonId } });
+  }
+
+  async getCurrentLessonBySlug(slug: string, userId: string) {
+    const course = await this.prismaService.course.findUnique({
+      where: { slug },
+    });
+    const enrollment = await this.prismaService.enrollement.findUnique({
+      where: { userId_courseId: { userId, courseId: course.id } },
+    });
+    return await this.prismaService.lesson.findUnique({
+      where: { id: enrollment.currentLessonId },
+    });
+  }
+
   async deleteLesson(lessonId: number) {
     return this.prismaService.lesson.delete({ where: { id: lessonId } });
   }

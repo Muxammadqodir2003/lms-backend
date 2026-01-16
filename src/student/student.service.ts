@@ -10,19 +10,33 @@ export class StudentService {
       where: { userId_courseId: { courseId, userId } },
     });
 
+    const course = await this.prismaService.course.findUnique({
+      where: { id: courseId },
+      include: { sections: { include: { lessons: true } } },
+    });
+
     if (enrollment)
-      throw new BadRequestException(
-        "Siz bu kursni allaqachon kursga qo'shilgansiz",
-      );
+      throw new BadRequestException("Siz bu kursga allaqachon qo'shilgansiz");
 
     enrollment = await this.prismaService.enrollement.create({
-      data: { courseId, userId },
+      data: {
+        courseId,
+        userId,
+        currentLessonId: course.sections[0].lessons[0].id,
+      },
     });
     return enrollment;
   }
 
   async getCourse(slug: string) {
     return await this.prismaService.course.findUnique({ where: { slug } });
+  }
+
+  async getEnrolledCourses(userId: string) {
+    return await this.prismaService.enrollement.findMany({
+      where: { userId },
+      include: { course: true },
+    });
   }
 
   async paidCourse() {}

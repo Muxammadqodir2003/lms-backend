@@ -56,4 +56,10 @@ export class SectionController {
   ) {
     return await this.sectionService.reorder(dto.sections);
   }
+
+  @HttpCode(200)
+  @Get('get-by-course-slug/:slug')
+  async getByCourseSlug(@Param('slug') slug: string) {
+    return await this.sectionService.getByCourseSlug(slug);
+  }
 }

@@ -22,4 +22,11 @@ export class StudentController {
   async getCourse(@Param('slug') slug: string) {
     return this.studentService.getCourse(slug);
   }
+
+  @HttpCode(200)
+  @Get('enrolled-courses')
+  @Auth('STUDENT')
+  async getEnrolledCourses(@User('id') userId: string) {
+    return this.studentService.getEnrolledCourses(userId);
+  }
 }

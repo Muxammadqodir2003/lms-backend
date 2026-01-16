@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
   Param,
   Patch,
   Post,
@@ -16,6 +17,7 @@ import { LessonService } from './lesson.service';
 import { LessonDto } from './dto/lesson.dto';
 import { Auth } from 'src/auth/decorators/auth.decorator';
 import { VideoService } from 'src/common/video.service';
+import { User } from 'src/auth/decorators/user.decorator';
 
 @Controller('lesson')
 export class LessonController {
@@ -99,11 +101,29 @@ export class LessonController {
     );
   }
 
+  @HttpCode(204)
   @Auth('INSTRUCTOR')
   @Patch('reorder')
   async reorderLesson(
     @Body() dto: { lessons: { id: number; orderIndex: number }[] },
   ) {
     return await this.lessonService.reorderLesson(dto.lessons);
+  }
+
+  @HttpCode(200)
+  @Auth('STUDENT')
+  @Get('get-by-id/:lessonId')
+  async getLessonById(@Param('lessonId') lessonId: string) {
+    return await this.lessonService.getLessonById(+lessonId);
+  }
+
+  @HttpCode(200)
+  @Auth('STUDENT')
+  @Get('get-current-lesson-by-slug/:slug')
+  async getCurrentLessonBySlug(
+    @Param('slug') slug: string,
+    @User('id') userId: string,
+  ) {
+    return await this.lessonService.getCurrentLessonBySlug(slug, userId);
   }
 }

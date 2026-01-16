@@ -94,14 +94,15 @@ model Lesson {
 }
 
 model Enrollement {
-  enrolledAt  DateTime  @default(now())
-  progress    Int       @default(0)
-  completedAt DateTime?
-  status      Status    @default(PENDING)
-  userId      String
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  courseId    Int
-  course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  enrolledAt      DateTime  @default(now())
+  progress        Int       @default(0)
+  completedAt     DateTime?
+  currentLessonId Int?
+  status          Status    @default(PENDING)
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId        Int
+  course          Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   @@unique([userId, courseId])
 }
