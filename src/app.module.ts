@@ -14,6 +14,7 @@ import { LessonModule } from './lesson/lesson.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { SupabaseService } from './supabase/supabase.service';
 
 @Module({
   imports: [
@@ -38,6 +39,6 @@ import { join } from 'path';
     PrismaModule,
   ],
   controllers: [],
-  providers: [PrismaService],
+  providers: [PrismaService, SupabaseService],
 })
 export class AppModule {}

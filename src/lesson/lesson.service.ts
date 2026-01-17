@@ -1,10 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { LessonDto } from './dto/lesson.dto';
+import { SupabaseService } from 'src/supabase/supabase.service';
 
 @Injectable()
 export class LessonService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly supabaseService: SupabaseService,
+  ) {}
 
   async createLesson(
     lessonDto: LessonDto,
@@ -47,6 +51,12 @@ export class LessonService {
     });
   }
 
+  async lessonCompleted(lessonId: number, userId: string) {
+    return this.prismaService.lessonProgress.create({
+      data: { userId, lessonId },
+    });
+  }
+
   async deleteLesson(lessonId: number) {
     return this.prismaService.lesson.delete({ where: { id: lessonId } });
   }
@@ -64,14 +74,23 @@ export class LessonService {
 
   async updateLesson(
     lessonDto: LessonDto,
-    video: string,
+    video: Express.Multer.File,
     lessonId: number,
     duration: number,
   ) {
     const lesson = await this.prismaService.lesson.findUnique({
       where: { id: lessonId },
     });
-    if (!video) {
+
+    const videoUrl = video
+      ? await this.supabaseService.uploadVideo(video)
+      : undefined;
+
+    if (videoUrl) {
+      await this.supabaseService.deleteVideo(lesson.video);
+    }
+
+    if (!videoUrl) {
       return await this.prismaService.lesson.update({
         where: { id: lessonId },
         data: { ...lessonDto, duration: lesson.duration, video: lesson.video },
@@ -79,7 +98,7 @@ export class LessonService {
     }
     return await this.prismaService.lesson.update({
       where: { id: lessonId },
-      data: { ...lessonDto, duration: duration, video },
+      data: { ...lessonDto, duration, video: videoUrl },
     });
   }
 }

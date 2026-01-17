@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -16,27 +17,30 @@ import { Auth } from 'src/auth/decorators/auth.decorator';
 import { CourseDto } from './dto/courseDto';
 import { User } from 'src/auth/decorators/user.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
 import { UpdateDto } from './dto/updateDto';
-import { CourseFiltersDto } from './dto/courseFilterDto';
+import { SupabaseService } from 'src/supabase/supabase.service';
 
 @Controller('course')
 export class CourseController {
-  constructor(private readonly courseService: CourseService) {}
+  constructor(
+    private readonly courseService: CourseService,
+    private readonly supabaseService: SupabaseService,
+  ) {}
 
   @HttpCode(201)
   @Post('create')
   @UseInterceptors(
     FileInterceptor('image', {
-      storage: diskStorage({
-        destination: 'public/uploads/images',
-        filename(req, file, callback) {
-          const uniqueSuffix =
-            Date.now() + '-' + Math.round(Math.random() * 1e9);
-          callback(null, uniqueSuffix + extname(file.originalname));
-        },
-      }),
+      limits: { fileSize: 1024 * 1024 * 2 },
+      fileFilter(req, file, callback) {
+        if (!file.mimetype.match(/\/(jpg|jpeg|png|webp)$/i)) {
+          return callback(
+            new BadRequestException('Only image files are allowed'),
+            false,
+          );
+        }
+        callback(null, true);
+      },
     }),
   )
   @Auth('INSTRUCTOR')
@@ -45,7 +49,7 @@ export class CourseController {
     @User('id') id: string,
     @UploadedFile() image: Express.Multer.File,
   ) {
-    const imageUrl = `public/uploads/images/${image.filename}`;
+    const imageUrl = await this.supabaseService.uploadImage(image);
     return await this.courseService.createCourse(courseDto, imageUrl, id);
   }
 
@@ -53,28 +57,30 @@ export class CourseController {
   @Patch('update/:courseId')
   @UseInterceptors(
     FileInterceptor('image', {
-      storage: diskStorage({
-        destination: 'public/uploads/images',
-        filename(req, file, callback) {
-          if (!file) return callback(null, '');
-          const uniqueSuffix =
-            Date.now() + '-' + Math.round(Math.random() * 1e9);
-          callback(null, uniqueSuffix + extname(file.originalname));
-        },
-      }),
+      limits: { fileSize: 2 * 1024 * 1024 },
+      fileFilter(req, file, callback) {
+        if (!file.mimetype.match(/\/(jpg|jpeg|png|webp)$/i)) {
+          return callback(
+            new BadRequestException('Only image files are allowed'),
+            false,
+          );
+        }
+        callback(null, true);
+      },
     }),
   )
   @Auth('INSTRUCTOR')
   async updateCourse(
     @Body() updateDto: UpdateDto,
     @Param('courseId') courseId: string,
+    @User('id') userId: string,
     @UploadedFile() image?: Express.Multer.File,
   ) {
-    const imageUrl = `public/uploads/images/${image?.filename}`;
     return await this.courseService.updateCourse(
+      image,
       updateDto,
-      imageUrl,
       +courseId,
+      userId,
     );
   }
 

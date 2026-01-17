@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -11,19 +12,21 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
 import { LessonService } from './lesson.service';
 import { LessonDto } from './dto/lesson.dto';
 import { Auth } from 'src/auth/decorators/auth.decorator';
 import { VideoService } from 'src/common/video.service';
 import { User } from 'src/auth/decorators/user.decorator';
+import { SupabaseService } from 'src/supabase/supabase.service';
+import { diskStorage } from 'multer';
+import * as fs from 'fs/promises';
 
 @Controller('lesson')
 export class LessonController {
   constructor(
     private readonly lessonService: LessonService,
     private readonly videoService: VideoService,
+    private readonly supabaseService: SupabaseService,
   ) {}
 
   @Post('create/:sectionId')
@@ -31,12 +34,20 @@ export class LessonController {
     FileInterceptor('video', {
       storage: diskStorage({
         destination: 'public/uploads/videos',
-        filename(req, file, callback) {
-          const uniqueSuffix =
-            Date.now() + '-' + Math.round(Math.random() * 1e9);
-          callback(null, uniqueSuffix + extname(file.originalname));
+        filename: (req, file, cb) => {
+          cb(null, `${Date.now()}-${file.originalname}`);
         },
       }),
+      limits: { fileSize: 1024 * 1024 * 100 },
+      fileFilter(req, file, cb) {
+        if (!file.mimetype.startsWith('video/')) {
+          return cb(
+            new BadRequestException('Only video files are allowed'),
+            false,
+          );
+        }
+        cb(null, true);
+      },
     }),
   )
   @Auth('INSTRUCTOR')
@@ -45,8 +56,10 @@ export class LessonController {
     @UploadedFile() video: Express.Multer.File,
     @Param('sectionId') sectionId: string,
   ) {
-    const videoUrl = `public/uploads/videos/${video.filename}`;
     const duration = await this.videoService.getVideoDuration(video.path);
+    const videoUrl = await this.supabaseService.uploadVideo(video);
+    await fs.unlink(video.path);
+
     return await this.lessonService.createLesson(
       lessonDto,
       videoUrl,
@@ -70,12 +83,20 @@ export class LessonController {
     FileInterceptor('video', {
       storage: diskStorage({
         destination: 'public/uploads/videos',
-        filename(req, file, callback) {
-          const uniqueSuffix =
-            Date.now() + '-' + Math.round(Math.random() * 1e9);
-          callback(null, uniqueSuffix + extname(file.originalname));
+        filename: (req, file, cb) => {
+          cb(null, `${Date.now()}-${file.originalname}`);
         },
       }),
+      limits: { fileSize: 1024 * 1024 * 100 },
+      fileFilter(req, file, cb) {
+        if (!file.mimetype.startsWith('video/')) {
+          return cb(
+            new BadRequestException('Only video files are allowed'),
+            false,
+          );
+        }
+        cb(null, true);
+      },
     }),
   )
   @Auth('INSTRUCTOR')
@@ -84,9 +105,6 @@ export class LessonController {
     @Param('lessonId') lessonId: string,
     @UploadedFile() video?: Express.Multer.File,
   ) {
-    const videoUrl = video
-      ? `public/uploads/videos/${video.filename}`
-      : undefined;
     let duration = 0;
     if (video) {
       duration = (await this.videoService.getVideoDuration(
@@ -95,7 +113,7 @@ export class LessonController {
     }
     return await this.lessonService.updateLesson(
       lessonDto,
-      videoUrl,
+      video,
       +lessonId,
       duration,
     );
@@ -125,5 +143,15 @@ export class LessonController {
     @User('id') userId: string,
   ) {
     return await this.lessonService.getCurrentLessonBySlug(slug, userId);
+  }
+
+  @HttpCode(200)
+  @Auth('STUDENT')
+  @Post('completed/:lessonId')
+  async lessonCompleted(
+    @Param('lessonId') lessonId: string,
+    @User('id') userId: string,
+  ) {
+    return await this.lessonService.lessonCompleted(+lessonId, userId);
   }
 }

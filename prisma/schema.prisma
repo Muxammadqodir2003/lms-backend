@@ -107,6 +107,14 @@ model Enrollement {
   @@unique([userId, courseId])
 }
 
+model LessonProgress {
+  id       Int    @id @default(autoincrement())
+  userId   String
+  lessonId Int
+
+  @@unique([userId, lessonId])
+}
+
 enum Status {
   PENDING
   PAID

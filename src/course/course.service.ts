@@ -2,11 +2,14 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CourseDto } from './dto/courseDto';
 import { UpdateDto } from './dto/updateDto';
-import { CourseFiltersDto } from './dto/courseFilterDto';
+import { SupabaseService } from 'src/supabase/supabase.service';
 
 @Injectable()
 export class CourseService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly supabaseService: SupabaseService,
+  ) {}
 
   async createCourse(
     courseDto: CourseDto,
@@ -39,10 +42,22 @@ export class CourseService {
     return course;
   }
 
-  async updateCourse(updateDto: UpdateDto, image: string, courseId: number) {
+  async updateCourse(
+    image: Express.Multer.File,
+    updateDto: UpdateDto,
+    courseId: number,
+    userId: string,
+  ) {
     const course = await this.prismaService.course.findUnique({
-      where: { id: courseId },
+      where: { id: courseId, instructorId: userId },
     });
+
+    const imageUrl = await this.supabaseService.uploadImage(image);
+
+    if (course.image) {
+      await this.supabaseService.deleteImage(course.image);
+    }
+
     return await this.prismaService.course.update({
       where: { id: courseId },
       data: {
@@ -51,7 +66,7 @@ export class CourseService {
         whatsLearn: updateDto.whatsLearn.split(','),
         tags: updateDto.tags.split(','),
         price: +updateDto.price,
-        image: image ? image : course.image,
+        image: imageUrl ? imageUrl : course.image,
       },
     });
   }
