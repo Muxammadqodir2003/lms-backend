@@ -8,6 +8,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
@@ -131,8 +132,12 @@ export class LessonController {
   @HttpCode(200)
   @Auth('STUDENT')
   @Get('get-by-id/:lessonId')
-  async getLessonById(@Param('lessonId') lessonId: string) {
-    return await this.lessonService.getLessonById(+lessonId);
+  async getLessonById(
+    @User('id') userId: string,
+    @Param('lessonId') lessonId: string,
+    @Query('slug') slug: string,
+  ) {
+    return await this.lessonService.getLessonById(+lessonId, slug, userId);
   }
 
   @HttpCode(200)

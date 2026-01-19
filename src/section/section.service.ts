@@ -33,15 +33,33 @@ export class SectionService {
     });
   }
 
-  async getByCourseSlug(slug: string) {
+  async getByCourseSlug(slug: string, userId: string) {
     const course = await this.prismaService.course.findUnique({
       where: { slug },
+      include: { sections: { include: { lessons: true } } },
     });
-    return await this.prismaService.section.findMany({
+    let lessonsId = [];
+    course.sections.forEach((section) => {
+      section.lessons.forEach((lesson) => {
+        lessonsId.push(lesson.id);
+      });
+    });
+
+    const completedLessons = await this.prismaService.lesson.findMany({
+      where: { id: { in: lessonsId } },
+      select: { id: true },
+    });
+
+    const sections = await this.prismaService.section.findMany({
       where: { courseId: course.id },
       include: { lessons: true },
       orderBy: { orderIndex: 'asc' },
     });
+
+    return {
+      sections,
+      completedLessons: completedLessons.map((lesson) => lesson.id),
+    };
   }
 
   async delete(id: number) {

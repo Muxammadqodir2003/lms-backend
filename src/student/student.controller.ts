@@ -1,4 +1,4 @@
-import { Controller, Get, HttpCode, Param, Post } from '@nestjs/common';
+import { Controller, Get, HttpCode, Param, Post, Query } from '@nestjs/common';
 import { StudentService } from './student.service';
 import { User } from 'src/auth/decorators/user.decorator';
 import { Auth } from 'src/auth/decorators/auth.decorator';
@@ -28,5 +28,16 @@ export class StudentController {
   @Auth('STUDENT')
   async getEnrolledCourses(@User('id') userId: string) {
     return this.studentService.getEnrolledCourses(userId);
+  }
+
+  @HttpCode(200)
+  @Post('complete-lesson/:lessonId')
+  @Auth('STUDENT')
+  async completeLesson(
+    @Param('lessonId') lessonId: string,
+    @Query('slug') slug: string,
+    @User('id') userId: string,
+  ) {
+    return this.studentService.completeLesson(+lessonId, userId, slug);
   }
 }

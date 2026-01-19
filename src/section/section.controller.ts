@@ -11,6 +11,7 @@ import {
 import { SectionService } from './section.service';
 import { Auth } from 'src/auth/decorators/auth.decorator';
 import { SectionDto } from './dto/section.dto';
+import { User } from 'src/auth/decorators/user.decorator';
 
 @Controller('section')
 export class SectionController {
@@ -59,7 +60,12 @@ export class SectionController {
 
   @HttpCode(200)
   @Get('get-by-course-slug/:slug')
-  async getByCourseSlug(@Param('slug') slug: string) {
-    return await this.sectionService.getByCourseSlug(slug);
+  @Auth('STUDENT')
+  async getByCourseSlug(
+    @User('id') userId: string,
+    @Param('slug') slug: string,
+  ) {
+    console.log(userId, slug);
+    return await this.sectionService.getByCourseSlug(slug, userId);
   }
 }
