@@ -97,6 +97,13 @@ export class CourseService {
         rating: query.rating ? Number(query.rating) : undefined,
         // isPublished: false,
       },
+      include: {
+        sections: {
+          include: {
+            lessons: true,
+          },
+        },
+      },
       skip: query.page ? (query.page - 1) * 10 : undefined,
       take: 10,
     });

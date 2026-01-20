@@ -24,10 +24,27 @@ export class StudentController {
   }
 
   @HttpCode(200)
-  @Get('enrolled-courses')
+  @Get('paid-courses')
   @Auth('STUDENT')
   async getEnrolledCourses(@User('id') userId: string) {
     return this.studentService.getEnrolledCourses(userId);
+  }
+
+  @HttpCode(200)
+  @Get('unpaid-courses')
+  @Auth('STUDENT')
+  async getUnpaidCourses(@User('id') userId: string) {
+    return this.studentService.getUnpaidCourses(userId);
+  }
+
+  @HttpCode(200)
+  @Post('pay-course/:courseId')
+  @Auth('STUDENT')
+  async payCourse(
+    @Param('courseId') courseId: string,
+    @User('id') userId: string,
+  ) {
+    return this.studentService.payCourse(+courseId, userId);
   }
 
   @HttpCode(200)

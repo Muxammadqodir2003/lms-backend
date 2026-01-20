@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
@@ -34,86 +38,124 @@ export class StudentService {
 
   async getEnrolledCourses(userId: string) {
     return await this.prismaService.enrollement.findMany({
-      where: { userId },
+      where: { userId, status: 'PAID' },
       include: { course: true },
     });
   }
 
+  async getUnpaidCourses(userId: string) {
+    return await this.prismaService.enrollement.findMany({
+      where: { userId, status: 'PENDING' },
+      include: { course: true },
+    });
+  }
+
+  async payCourse(courseId: number, userId: string) {
+    try {
+      const course = await this.prismaService.course.findUnique({
+        where: { id: courseId },
+      });
+
+      if (!course) {
+        throw new NotFoundException('Kurs topilmadi');
+      }
+
+      const enrollment = await this.prismaService.enrollement.findUnique({
+        where: { userId_courseId: { courseId, userId } },
+      });
+
+      if (!enrollment) {
+        throw new BadRequestException("Siz bu kursga allaqachon qo'shilgansiz");
+      }
+
+      if (enrollment) {
+        await this.prismaService.enrollement.update({
+          where: { userId_courseId: { courseId, userId } },
+          data: { status: 'PAID' },
+        });
+      }
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async completeLesson(lessonId: number, userId: string, slug: string) {
-    let lessonProgress = await this.prismaService.lessonProgress.findUnique({
-      where: { userId_lessonId: { userId, lessonId } },
-    });
+    try {
+      // 1. LessonProgress yaratishga urinib ko‘ramiz
+      await this.prismaService.lessonProgress.create({
+        data: { userId, lessonId },
+      });
+    } catch (error) {
+      // 2. Agar unique constraint buzilsa — demak tugatib bo‘lgan
+      if (error.code === 'P2002') {
+        throw new BadRequestException('Siz bu darsni allaqachon tugatgansiz!');
+      }
+      throw error;
+    }
 
-    if (lessonProgress)
-      throw new BadRequestException('Siz bu darsni allaqachon tugatgansiz!');
-
-    lessonProgress = await this.prismaService.lessonProgress.create({
-      data: { userId, lessonId },
-    });
-
+    // 3. Course ni olish
     const course = await this.prismaService.course.findUnique({
       where: { slug },
       include: { sections: { include: { lessons: true } } },
     });
 
+    if (!course) {
+      throw new NotFoundException('Kurs topilmadi');
+    }
+
+    // 4. Enrollement tekshiruvi
+    const enrollement = await this.prismaService.enrollement.findUnique({
+      where: { userId_courseId: { userId, courseId: course.id } },
+    });
+
+    if (!enrollement) {
+      throw new BadRequestException('Siz bu kursga yozilmagansiz');
+    }
+
+    // 5. Barcha darslar
+    const allLessons = course.sections
+      .flatMap((section) => section.lessons)
+      .sort((a, b) => a.orderIndex - b.orderIndex);
+
     const progresses = await this.prismaService.lessonProgress.findMany({
       where: { userId },
     });
 
-    const allLessons = course.sections.reduce(
-      (acc, section) =>
-        [...acc, ...section.lessons].sort(
-          (a, b) => a.orderIndex - b.orderIndex,
-        ),
-      [],
-    );
+    const completedLessonIds = progresses.map((p) => p.lessonId);
 
-    const getNextLessonFromSection = (sectionId: number) => {
-      const section = course.sections.find(
-        (section) => section.id === sectionId,
-      );
-      const uncompletedLessons = section?.lessons.filter(
-        (lesson) =>
-          !progresses.some((progress) => progress.lessonId === lesson.id),
-      );
-      return uncompletedLessons?.[0].id;
-    };
-
-    const uncompletedLessons = [];
-    allLessons.forEach((lesson) => {
-      if (!progresses.some((progress) => progress.lessonId === lesson.id)) {
-        uncompletedLessons.push(lesson.id);
-      }
-    });
-    const lesson = await this.prismaService.lesson.findUnique({
+    const currentLesson = await this.prismaService.lesson.findUnique({
       where: { id: lessonId },
     });
 
-    const nextLesson =
-      getNextLessonFromSection(lesson?.sectionId || 0) || uncompletedLessons[0];
-
-    const enrollement = await this.prismaService.enrollement.findUnique({
-      where: { userId_courseId: { courseId: course.id, userId } },
-    });
-
-    if (nextLesson) {
-      await this.prismaService.enrollement.update({
-        where: { userId_courseId: { courseId: course.id, userId } },
-        data: {
-          currentLessonId: nextLesson,
-        },
-      });
+    if (!currentLesson) {
+      throw new NotFoundException('Dars topilmadi');
     }
 
+    // 6. Keyingi dars
+    const nextLesson =
+      allLessons.find(
+        (l) =>
+          l.sectionId === currentLesson.sectionId &&
+          !completedLessonIds.includes(l.id),
+      ) || allLessons.find((l) => !completedLessonIds.includes(l.id));
+
+    // 7. Progressni aniq hisoblash
+    const progress = Math.min(
+      Math.round((completedLessonIds.length / allLessons.length) * 100),
+      100,
+    );
+
     await this.prismaService.enrollement.update({
-      where: { userId_courseId: { courseId: course.id, userId } },
+      where: { userId_courseId: { userId, courseId: course.id } },
       data: {
-        progress: enrollement?.progress + Math.floor(100 / allLessons.length),
+        currentLessonId: nextLesson?.id ?? null,
+        progress,
       },
     });
 
-    return nextLesson ? nextLesson : 'Tabriklaymiz! Siz kursni tugatdingiz!';
+    return {
+      nextLessonId: nextLesson?.id ?? null,
+      finished: !nextLesson,
+    };
   }
-
-  async paidCourse() {}
 }
