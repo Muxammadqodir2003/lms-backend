@@ -100,6 +100,20 @@ export class CourseController {
   }
 
   @HttpCode(200)
+  @Post('active/:slug')
+  @Auth('INSTRUCTOR')
+  async activeCourse(@Param('slug') slug: string) {
+    return await this.courseService.activeCourse(slug);
+  }
+
+  @HttpCode(200)
+  @Post('deactive/:slug')
+  @Auth('INSTRUCTOR')
+  async deactiveCourse(@Param('slug') slug: string) {
+    return await this.courseService.deactiveCourse(slug);
+  }
+
+  @HttpCode(200)
   @Delete('delete/:id')
   @Auth('INSTRUCTOR')
   async deleteCourse(@Param('id') id: string) {

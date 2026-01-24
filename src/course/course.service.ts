@@ -95,7 +95,7 @@ export class CourseService {
         level: query.level ? query.level : undefined,
         language: query.language ? query.language : undefined,
         rating: query.rating ? Number(query.rating) : undefined,
-        // isPublished: false,
+        isPublished: true,
       },
       include: {
         sections: {
@@ -113,13 +113,41 @@ export class CourseService {
         level: query.level ? query.level : undefined,
         language: query.language ? query.language : undefined,
         rating: query.rating ? Number(query.rating) : undefined,
-        // isPublished: false,
+        isPublished: true,
       },
     });
     return { courses, totalCourses };
   }
 
+  async activeCourse(slug: string) {
+    try {
+      return await this.prismaService.course.update({
+        where: { slug },
+        data: { isPublished: true },
+      });
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async deactiveCourse(slug: string) {
+    try {
+      return await this.prismaService.course.update({
+        where: { slug },
+        data: { isPublished: false },
+      });
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async delete(id: number) {
+    const course = await this.prismaService.course.findUnique({
+      where: { id },
+    });
+    if (course.image) {
+      await this.supabaseService.deleteImage(course.image);
+    }
     return await this.prismaService.course.delete({ where: { id } });
   }
 }

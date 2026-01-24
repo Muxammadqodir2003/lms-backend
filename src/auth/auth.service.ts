@@ -9,6 +9,7 @@ import * as bcrypt from 'bcrypt';
 import { LoginDto } from './dto/login.dto';
 import { TokenService } from 'src/token/token.service';
 import { MailService } from 'src/mail/mail.service';
+import { RedisService } from 'src/redis/redis.service';
 
 interface SocialProfile {
   email: string;
@@ -22,6 +23,7 @@ export class AuthService {
     private readonly prismaService: PrismaService,
     private readonly tokenService: TokenService,
     private readonly mail: MailService,
+    private readonly redisService: RedisService,
   ) {}
 
   async register(email: string) {
@@ -37,7 +39,7 @@ export class AuthService {
   }
 
   async verify(registerDto: RegisterDto) {
-    const result = await this.mail.verifyOtp(
+    const result = await this.redisService.verifyOtp(
       registerDto.email,
       registerDto.otp,
     );
@@ -65,13 +67,16 @@ export class AuthService {
     return await this.prismaService.user.deleteMany({});
   }
 
-  async login(loginDto: LoginDto) {
+  async login(loginDto: LoginDto, ip: string, userAgent: string) {
     const user = await this.prismaService.user.findUnique({
       where: { email: loginDto.email },
     });
 
     if (!user)
       throw new UnauthorizedException('Bunday foydalanuvchi topilmadi');
+
+    const redisUserKey = `login_block:${user.id}`;
+    await this.redisService.login(redisUserKey, user, ip, userAgent);
 
     const isPasswordWalid = await bcrypt.compare(
       loginDto.password,
@@ -83,22 +88,28 @@ export class AuthService {
 
     const tokens = this.tokenService.generateTokens(user.id);
     await this.tokenService.saveToken(tokens.refreshToken, user.id);
+    await this.redisService.deleteLoginBlock(redisUserKey);
     return { ...user, ...tokens };
   }
 
   async refresh(refreshToken: string) {
-    const payload = this.tokenService.validateRefreshToken(refreshToken);
-    if (!payload) throw new UnauthorizedException('Yaroqsiz token');
+    try {
+      const payload = this.tokenService.validateRefreshToken(refreshToken);
+      if (!payload) throw new UnauthorizedException('Yaroqsiz token');
 
-    const tokenDb = await this.tokenService.findToken(refreshToken);
-    if (!tokenDb) throw new UnauthorizedException('Token topilmadi');
+      const tokenDb = await this.tokenService.findToken(refreshToken);
+      if (!tokenDb) throw new UnauthorizedException('Token topilmadi');
 
-    const user = await this.prismaService.user.findUnique({
-      where: { id: payload.userId },
-    });
-    const tokens = this.tokenService.generateTokens(user.id);
-    await this.tokenService.saveToken(tokens.refreshToken, user.id);
-    return { ...user, ...tokens };
+      const user = await this.prismaService.user.findUnique({
+        where: { id: payload.userId },
+      });
+
+      const tokens = this.tokenService.generateTokens(user.id);
+      await this.tokenService.saveToken(tokens.refreshToken, user.id);
+      return { ...user, ...tokens };
+    } catch (error) {
+      throw error;
+    }
   }
 
   async findOrCreateSocialProfile(

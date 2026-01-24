@@ -20,6 +20,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
+    "@nest-lab/throttler-storage-redis": "^1.1.0",
     "@nestjs-modules/ioredis": "^1.1.2",
     "@nestjs-modules/mailer": "^1.8.1",
     "@nestjs/common": "^10.0.0",
@@ -30,6 +31,7 @@
     "@nestjs/platform-express": "^11.1.11",
     "@nestjs/platform-socket.io": "^11.1.11",
     "@nestjs/serve-static": "^5.0.4",
+    "@nestjs/throttler": "^6.5.0",
     "@nestjs/websockets": "^11.1.11",
     "@prisma/adapter-pg": "^7.0.1",
     "@prisma/client": "^7.0.1",

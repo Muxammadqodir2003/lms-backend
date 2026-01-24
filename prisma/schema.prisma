@@ -115,6 +115,15 @@ model LessonProgress {
   @@unique([userId, lessonId])
 }
 
+model Log {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  ipAddress String
+  userAgent String
+  reason    String
+  createdAt DateTime @default(now())
+}
+
 enum Status {
   PENDING
   PAID

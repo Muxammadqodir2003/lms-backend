@@ -1,14 +1,12 @@
-import { InjectRedis } from '@nestjs-modules/ioredis';
 import { MailerService } from '@nestjs-modules/mailer';
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import Redis from 'ioredis';
 
 @Injectable()
 export class MailService {
   constructor(
     private readonly mailerService: MailerService,
-    @InjectRedis()
-    private readonly redis: Redis,
+    @Inject('REDIS_CLIENT') private readonly redis: Redis,
   ) {}
 
   async sentOtp(email: string) {
@@ -24,16 +22,6 @@ export class MailService {
       await this.redis.set(`otp:${email}`, otp, 'EX', 300);
     } catch (error) {
       console.log(error);
-    }
-  }
-
-  async verifyOtp(email: string, otp: number) {
-    const redisOtp = await this.redis.get(`otp:${email}`);
-    if (otp.toString() === redisOtp) {
-      await this.redis.del(`otp:${email}`);
-      return true;
-    } else {
-      return false;
     }
   }
 

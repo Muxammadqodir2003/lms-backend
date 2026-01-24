@@ -6,5 +6,6 @@ export class LessonDto {
   name: string;
 
   @Optional()
-  description?: string;
+  @IsString()
+  description: string;
 }

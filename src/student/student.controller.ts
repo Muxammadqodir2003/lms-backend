@@ -1,4 +1,12 @@
-import { Controller, Get, HttpCode, Param, Post, Query } from '@nestjs/common';
+import {
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { StudentService } from './student.service';
 import { User } from 'src/auth/decorators/user.decorator';
 import { Auth } from 'src/auth/decorators/auth.decorator';
@@ -15,6 +23,16 @@ export class StudentController {
     @User('id') userId: string,
   ) {
     return this.studentService.enrollCourse(+courseId, userId);
+  }
+
+  @HttpCode(200)
+  @Delete('enrollment/:courseId')
+  @Auth('STUDENT')
+  async deleteEnrollment(
+    @Param('courseId') courseId: string,
+    @User('id') userId: string,
+  ) {
+    return this.studentService.deleteEnrollment(+courseId, userId);
   }
 
   @HttpCode(200)
@@ -38,13 +56,10 @@ export class StudentController {
   }
 
   @HttpCode(200)
-  @Post('pay-course/:courseId')
+  @Post('pay-courses')
   @Auth('STUDENT')
-  async payCourse(
-    @Param('courseId') courseId: string,
-    @User('id') userId: string,
-  ) {
-    return this.studentService.payCourse(+courseId, userId);
+  async payCourses(@User('id') userId: string) {
+    return this.studentService.payCourses(userId);
   }
 
   @HttpCode(200)

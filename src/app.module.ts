@@ -4,7 +4,6 @@ import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { TokenModule } from './token/token.module';
 import { MailModule } from './mail/mail.module';
-import { RedisModule } from '@nestjs-modules/ioredis';
 import { StudentModule } from './student/student.module';
 import { AdminModule } from './admin/admin.module';
 import { InstructorModule } from './instructor/instructor.module';
@@ -15,6 +14,11 @@ import { PrismaModule } from './prisma/prisma.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { SupabaseService } from './supabase/supabase.service';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
+import Redis from 'ioredis';
+import { APP_GUARD } from '@nestjs/core';
+import { RedisModule } from './redis/redis.module';
 
 @Module({
   imports: [
@@ -24,9 +28,21 @@ import { SupabaseService } from './supabase/supabase.service';
       exclude: ['/api*'],
     }),
     ConfigModule.forRoot({ isGlobal: true }),
-    RedisModule.forRoot({
-      config: { host: '127.0.0.1', port: 6379 },
+    ThrottlerModule.forRoot({
+      throttlers: [
+        {
+          ttl: 20000,
+          limit: 2,
+        },
+      ],
+      storage: new ThrottlerStorageRedisService(
+        new Redis({
+          host: '127.0.0.1',
+          port: 6379,
+        }),
+      ),
     }),
+    RedisModule,
     AuthModule,
     TokenModule,
     MailModule,
@@ -37,8 +53,13 @@ import { SupabaseService } from './supabase/supabase.service';
     SectionModule,
     LessonModule,
     PrismaModule,
+    RedisModule,
   ],
   controllers: [],
-  providers: [PrismaService, SupabaseService],
+  providers: [
+    PrismaService,
+    SupabaseService,
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+  ],
 })
 export class AppModule {}

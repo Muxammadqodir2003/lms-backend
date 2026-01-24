@@ -46,34 +46,30 @@ export class StudentService {
   async getUnpaidCourses(userId: string) {
     return await this.prismaService.enrollement.findMany({
       where: { userId, status: 'PENDING' },
-      include: { course: true },
+      include: { course: { include: { instructor: true } } },
     });
   }
 
-  async payCourse(courseId: number, userId: string) {
+  async deleteEnrollment(courseId: number, userId: string) {
     try {
-      const course = await this.prismaService.course.findUnique({
-        where: { id: courseId },
-      });
-
-      if (!course) {
-        throw new NotFoundException('Kurs topilmadi');
-      }
-
       const enrollment = await this.prismaService.enrollement.findUnique({
         where: { userId_courseId: { courseId, userId } },
       });
+      if (!enrollment) throw new NotFoundException('Enrollment not found');
+      return await this.prismaService.enrollement.delete({
+        where: { userId_courseId: { courseId, userId } },
+      });
+    } catch (error) {
+      throw error;
+    }
+  }
 
-      if (!enrollment) {
-        throw new BadRequestException("Siz bu kursga allaqachon qo'shilgansiz");
-      }
-
-      if (enrollment) {
-        await this.prismaService.enrollement.update({
-          where: { userId_courseId: { courseId, userId } },
-          data: { status: 'PAID' },
-        });
-      }
+  async payCourses(userId: string) {
+    try {
+      await this.prismaService.enrollement.updateMany({
+        where: { userId },
+        data: { status: 'PAID' },
+      });
     } catch (error) {
       throw error;
     }

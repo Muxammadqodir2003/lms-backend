@@ -68,6 +68,12 @@ export class LessonService {
   }
 
   async deleteLesson(lessonId: number) {
+    const lesson = await this.prismaService.lesson.findUnique({
+      where: { id: lessonId },
+    });
+    if (lesson.video) {
+      await this.supabaseService.deleteVideo(lesson.video);
+    }
     return this.prismaService.lesson.delete({ where: { id: lessonId } });
   }
 
