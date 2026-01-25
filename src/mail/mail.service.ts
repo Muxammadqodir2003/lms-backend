@@ -56,4 +56,16 @@ export class MailService {
       console.log(error);
     }
   }
+
+  async sendBlockAccountEmail(to: string, subject: string, html: string) {
+    try {
+      await this.mailerService.sendMail({
+        to,
+        subject,
+        html,
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  }
 }

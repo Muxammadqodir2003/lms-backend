@@ -1,4 +1,4 @@
-import { Controller, Param, Post } from '@nestjs/common';
+import { Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { Auth } from 'src/auth/decorators/auth.decorator';
 import { User } from 'src/auth/decorators/user.decorator';
@@ -20,5 +20,11 @@ export class AdminController {
   @Auth('ADMIN')
   async deactivate(@Param('id') id: string) {
     return this.adminService.deactivateInstructor(id);
+  }
+
+  @Get('logs')
+  @Auth('ADMIN')
+  async getLogs(@Query('page') page: string) {
+    return await this.adminService.getLogs(+page);
   }
 }

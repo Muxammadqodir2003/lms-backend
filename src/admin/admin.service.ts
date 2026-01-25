@@ -36,4 +36,12 @@ export class AdminService {
     });
     return true;
   }
+
+  async getLogs(page: number) {
+    return await this.prismaService.log.findMany({
+      skip: (page - 1) * 8,
+      take: 8,
+      orderBy: { createdAt: 'desc' },
+    });
+  }
 }

@@ -3,12 +3,14 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CourseDto } from './dto/courseDto';
 import { UpdateDto } from './dto/updateDto';
 import { SupabaseService } from 'src/supabase/supabase.service';
+import { RedisService } from 'src/redis/redis.service';
 
 @Injectable()
 export class CourseService {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly supabaseService: SupabaseService,
+    private readonly redisService: RedisService,
   ) {}
 
   async createCourse(
@@ -141,13 +143,29 @@ export class CourseService {
     }
   }
 
-  async delete(id: number) {
+  async delete(slug: string, ip: string, userAgent: string) {
     const course = await this.prismaService.course.findUnique({
-      where: { id },
+      where: { slug },
     });
+    if (!course) throw new BadRequestException('Bunday kurs topilmadi');
+
+    const user = await this.prismaService.user.findUnique({
+      where: { id: course.instructorId },
+    });
+
+    const redisUserKey = `instructor_block:${course.instructorId}`;
+    if (course.isPublished) {
+      await this.redisService.blockCourseDelete(
+        redisUserKey,
+        user,
+        ip,
+        userAgent,
+      );
+    }
+
     if (course.image) {
       await this.supabaseService.deleteImage(course.image);
     }
-    return await this.prismaService.course.delete({ where: { id } });
+    return await this.prismaService.course.delete({ where: { slug } });
   }
 }

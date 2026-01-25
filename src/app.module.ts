@@ -31,14 +31,16 @@ import { RedisModule } from './redis/redis.module';
     ThrottlerModule.forRoot({
       throttlers: [
         {
-          ttl: 20000,
-          limit: 2,
+          ttl: 200,
+          limit: 10,
         },
       ],
       storage: new ThrottlerStorageRedisService(
         new Redis({
-          host: '127.0.0.1',
-          port: 6379,
+          host: process.env.REDIS_HOST,
+          port: Number(process.env.REDIS_PORT),
+          password: process.env.REDIS_PASS,
+          tls: process.env.REDIS_TLS ? {} : undefined,
         }),
       ),
     }),

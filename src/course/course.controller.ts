@@ -9,6 +9,7 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
@@ -19,6 +20,9 @@ import { User } from 'src/auth/decorators/user.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UpdateDto } from './dto/updateDto';
 import { SupabaseService } from 'src/supabase/supabase.service';
+import type { Request } from 'express';
+import { Throttle } from '@nestjs/throttler';
+import { RATE_LIMIT } from 'src/constants';
 
 @Controller('course')
 export class CourseController {
@@ -113,10 +117,21 @@ export class CourseController {
     return await this.courseService.deactiveCourse(slug);
   }
 
+  @Throttle({
+    default: {
+      limit: RATE_LIMIT.DELETE_COURSE.limit,
+      ttl: RATE_LIMIT.DELETE_COURSE.ttl,
+    },
+  })
   @HttpCode(200)
-  @Delete('delete/:id')
+  @Delete('delete/:slug')
   @Auth('INSTRUCTOR')
-  async deleteCourse(@Param('id') id: string) {
-    return await this.courseService.delete(+id);
+  async deleteCourse(@Param('slug') slug: string, @Req() req: Request) {
+    const ip =
+      req.headers['x-forwarded-for']?.toString().split(',')[0] ||
+      req.socket.remoteAddress;
+
+    const userAgent = req.headers['user-agent'];
+    return await this.courseService.delete(slug, ip, userAgent);
   }
 }

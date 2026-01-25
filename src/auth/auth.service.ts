@@ -75,20 +75,21 @@ export class AuthService {
     if (!user)
       throw new UnauthorizedException('Bunday foydalanuvchi topilmadi');
 
-    const redisUserKey = `login_block:${user.id}`;
-    await this.redisService.login(redisUserKey, user, ip, userAgent);
-
-    const isPasswordWalid = await bcrypt.compare(
+    const isPasswordValid = await bcrypt.compare(
       loginDto.password,
       user.password,
     );
 
-    if (!isPasswordWalid)
+    const redisUserKey = `login_block:${user.id}`;
+    await this.redisService.login(redisUserKey, user, ip, userAgent);
+
+    if (!isPasswordValid) {
       throw new UnauthorizedException("Email yoki parol noto'g'ri");
+    }
 
     const tokens = this.tokenService.generateTokens(user.id);
     await this.tokenService.saveToken(tokens.refreshToken, user.id);
-    await this.redisService.deleteLoginBlock(redisUserKey);
+    await this.redisService.deleteBlock(redisUserKey, user.id);
     return { ...user, ...tokens };
   }
 
@@ -140,6 +141,11 @@ export class AuthService {
     if (!user)
       throw new UnauthorizedException('Bu email bilan foydalanuvchi topilmadi');
 
+    if (user.password === '')
+      throw new UnauthorizedException(
+        'Siz social profile orqali ro`yxatdan o`tgansiz!',
+      );
+
     const token = this.tokenService.generateRecoveryToken(user.id);
     const url = `http://localhost:3000/recovery-account/${token}`;
     await this.mail.sendSecoveryUrl(email, url);
@@ -150,12 +156,16 @@ export class AuthService {
     const payload = this.tokenService.validateRecoveryToken(token);
     if (!payload) throw new UnauthorizedException('Token yaroqli emas');
 
-    console.log(payload);
     const user = await this.prismaService.user.findUnique({
       where: { id: payload.userId },
     });
     if (!user)
       throw new UnauthorizedException('Bunday foydalanuvchi topilmadi');
+
+    if (user.password === '')
+      throw new UnauthorizedException(
+        'Siz social profile orqali ro`yxatdan o`tgansiz!',
+      );
 
     const hashedPassword = await bcrypt.hash(password, 10);
     await this.prismaService.user.update({

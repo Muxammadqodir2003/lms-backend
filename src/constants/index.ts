@@ -5,4 +5,5 @@ export const RATE_LIMIT = {
   RECOVERY: { limit: 3, ttl: 60 },
   OTP: { limit: 3, ttl: 60 },
   VERIFY: { limit: 3, ttl: 60 },
+  DELETE_COURSE: { limit: 5, ttl: 60 * 60 * 24 },
 };
