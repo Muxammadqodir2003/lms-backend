@@ -117,7 +117,7 @@ model LessonProgress {
 
 model Log {
   id        Int      @id @default(autoincrement())
-  userId    String
+  email     String
   ipAddress String
   userAgent String
   reason    String

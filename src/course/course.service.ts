@@ -154,10 +154,19 @@ export class CourseService {
     });
 
     const redisUserKey = `instructor_block:${course.instructorId}`;
+    const isBlock = await this.redisService.blockCourseDelete(
+      redisUserKey,
+      user.email,
+      ip,
+      userAgent,
+    );
+    if (!isBlock)
+      throw new BadRequestException('You cannot delete 3 courses in a day.');
+
     if (course.isPublished) {
       await this.redisService.blockCourseDelete(
         redisUserKey,
-        user,
+        user.email,
         ip,
         userAgent,
       );

@@ -23,9 +23,59 @@ export class RedisService {
     }
   }
 
-  async login(
+  async blockVerifyOtp(ip: string, email: string, userAgent: string) {
+    const isBlock = await this.redis.get(`block_verify_otp:${ip}`);
+    if (isBlock) {
+      return false;
+    }
+
+    const wrongAttempts = await this.redis.get(
+      `wrong_attempts_verify_otp:${ip}`,
+    );
+    if (+wrongAttempts >= 3) {
+      await this.redis.set(`block_verify_otp:${ip}`, 'true', 'EX', 30 * 60);
+      await this.prismaService.log.create({
+        data: {
+          email,
+          ipAddress: ip,
+          userAgent,
+          reason: 'Too many failed verify otp attempts',
+        },
+      });
+    }
+
+    if (wrongAttempts) {
+      await this.redis.incr(`wrong_attempts_verify_otp:${ip}`);
+    } else {
+      await this.redis.set(`wrong_attempts_verify_otp:${ip}`, 1, 'EX', 30 * 60);
+    }
+
+    return true;
+  }
+
+  async blockSendOtp(ip: string) {
+    const isBlock = await this.redis.get(`block_send_otp:${ip}`);
+    if (isBlock) {
+      return false;
+    }
+
+    const wrongAttempts = await this.redis.get(`wrong_attempts_send_otp:${ip}`);
+    if (+wrongAttempts >= 3) {
+      await this.redis.set(`block_send_otp:${ip}`, 'true', 'EX', 30 * 60);
+    }
+
+    if (wrongAttempts) {
+      await this.redis.incr(`wrong_attempts_send_otp:${ip}`);
+    } else {
+      await this.redis.set(`wrong_attempts_send_otp:${ip}`, 1, 'EX', 30 * 60);
+    }
+
+    return true;
+  }
+
+  async blockLogin(
     redisUserKey: string,
-    user: { id: string; email: string },
+    email: string,
     ip: string,
     userAgent: string,
   ) {
@@ -36,19 +86,13 @@ export class RedisService {
       );
     }
 
-    const wrongAttempts = await this.redis.get(`wrong_attempts:${user.id}`);
-    if (wrongAttempts) {
-      await this.redis.incr(`wrong_attempts:${user.id}`);
-    } else {
-      await this.redis.set(`wrong_attempts:${user.id}`, 1, 'EX', 24 * 60 * 60);
-    }
-
+    const wrongAttempts = await this.redis.get(`wrong_attempts_login:${email}`);
     if (+wrongAttempts >= 3) {
-      await this.redis.set(redisUserKey, 'true', 'EX', 24 * 60 * 60);
+      await this.redis.set(redisUserKey, 'true', 'EX', 30 * 60);
 
       await this.prismaService.log.create({
         data: {
-          userId: user.id,
+          email,
           ipAddress: ip,
           userAgent: userAgent,
           reason: 'Too many failed login attempts',
@@ -56,7 +100,7 @@ export class RedisService {
       });
 
       await this.mailService.sendBlockAccountEmail(
-        user.email,
+        email,
         'Account Locked',
         'Your account has been locked due to too many failed login attempts.',
       );
@@ -64,41 +108,110 @@ export class RedisService {
         'Account temporarily locked. Try again later.',
       );
     }
+
+    if (wrongAttempts) {
+      await this.redis.incr(`wrong_attempts_login:${email}`);
+    } else {
+      await this.redis.set(`wrong_attempts_login:${email}`, 1, 'EX', 30 * 60);
+    }
+  }
+
+  async blockSendUrl(ip: string) {
+    const isBlock = await this.redis.get(`block_send_url:${ip}`);
+    if (isBlock) {
+      return false;
+    }
+
+    const wrongAttempts = await this.redis.get(`wrong_attempts_send_url:${ip}`);
+
+    if (+wrongAttempts >= 5) {
+      await this.redis.set(`block_send_url:${ip}`, 'true', 'EX', 30 * 60);
+    }
+
+    if (wrongAttempts) {
+      await this.redis.incr(`wrong_attempts_send_url:${ip}`);
+    } else {
+      await this.redis.set(`wrong_attempts_send_url:${ip}`, 1, 'EX', 30 * 60);
+    }
+
+    return true;
+  }
+
+  async blockRecoveryAccount(ip: string) {
+    const isBlock = await this.redis.get(`block_recovery_account:${ip}`);
+    if (isBlock) {
+      return false;
+    }
+
+    const wrongAttempts = await this.redis.get(
+      `wrong_attempts_recovery_account:${ip}`,
+    );
+
+    if (+wrongAttempts >= 5) {
+      await this.redis.set(
+        `block_recovery_account:${ip}`,
+        'true',
+        'EX',
+        30 * 60,
+      );
+    }
+
+    if (wrongAttempts) {
+      await this.redis.incr(`wrong_attempts_recovery_account:${ip}`);
+    } else {
+      await this.redis.set(
+        `wrong_attempts_recovery_account:${ip}`,
+        1,
+        'EX',
+        30 * 60,
+      );
+    }
+
+    return true;
   }
 
   async blockCourseDelete(
     redisUserKey: string,
-    user: { id: string; email: string },
+    email: string,
     ip: string,
     userAgent: string,
   ) {
-    const attemptsCount = await this.redis.get(redisUserKey);
-    if (+attemptsCount == 2) {
+    const isBlock = await this.redis.get(redisUserKey);
+    if (isBlock) {
+      return false;
+    }
+
+    const attemptsCount = await this.redis.get(`block_course_delete:${email}`);
+
+    if (+attemptsCount >= 2) {
+      await this.redis.set(redisUserKey, 'true', 'EX', 24 * 60 * 60);
       await this.prismaService.log.create({
         data: {
-          userId: user.id,
+          email,
           ipAddress: ip,
-          userAgent: userAgent,
+          userAgent,
           reason: '3 times attempt to delete course in a day',
         },
       });
 
       await this.mailService.sendBlockAccountEmail(
-        user.email,
+        email,
         'Account Locked',
         'Your account has been locked due to 3 times attempt to delete course in a day.',
       );
-      throw new ForbiddenException('You cannot delete 3 courses in a day.');
+      await this.redis.incr(redisUserKey);
+      return false;
     }
     if (!attemptsCount) {
       await this.redis.set(redisUserKey, 1, 'EX', 24 * 60 * 60);
     } else {
       await this.redis.incr(redisUserKey);
     }
+    return true;
   }
 
   async deleteBlock(redisUserKey: string, userId: string) {
     await this.redis.del(redisUserKey);
-    await this.redis.del(`wrong_attempts:${userId}`);
+    await this.redis.del(`wrong_attempts_login:${userId}`);
   }
 }

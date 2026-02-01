@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { PrismaService } from './prisma/prisma.service';
 import { AuthModule } from './auth/auth.module';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TokenModule } from './token/token.module';
 import { MailModule } from './mail/mail.module';
 import { StudentModule } from './student/student.module';
@@ -14,11 +14,12 @@ import { PrismaModule } from './prisma/prisma.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { SupabaseService } from './supabase/supabase.service';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
 import Redis from 'ioredis';
 import { APP_GUARD } from '@nestjs/core';
 import { RedisModule } from './redis/redis.module';
+import { CustomThrottlerGuard } from './common/guards/throttler.guard';
 
 @Module({
   imports: [
@@ -28,21 +29,29 @@ import { RedisModule } from './redis/redis.module';
       exclude: ['/api*'],
     }),
     ConfigModule.forRoot({ isGlobal: true }),
-    ThrottlerModule.forRoot({
-      throttlers: [
-        {
-          ttl: 200,
-          limit: 10,
-        },
-      ],
-      storage: new ThrottlerStorageRedisService(
-        new Redis({
-          host: process.env.REDIS_HOST,
-          port: Number(process.env.REDIS_PORT),
-          password: process.env.REDIS_PASS,
-          tls: process.env.REDIS_TLS ? {} : undefined,
-        }),
-      ),
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: async (config: ConfigService) => ({
+        throttlers: [
+          {
+            name: 'default',
+            ttl: 60000,
+            limit: 10,
+          },
+        ],
+        errorMessage: 'Too many requests. Please try again after a minute.',
+        storage: new ThrottlerStorageRedisService(
+          new Redis(config.get('REDIS_URL'), {
+            tls: {
+              rejectUnauthorized: false,
+            },
+            retryStrategy(times) {
+              return Math.min(times * 50, 2000);
+            },
+          }),
+        ),
+      }),
     }),
     RedisModule,
     AuthModule,
@@ -61,7 +70,7 @@ import { RedisModule } from './redis/redis.module';
   providers: [
     PrismaService,
     SupabaseService,
-    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: CustomThrottlerGuard },
   ],
 })
 export class AppModule {}

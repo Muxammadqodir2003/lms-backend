@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 import { LoginDto } from './dto/login.dto';
 import { TokenService } from 'src/token/token.service';
 import { MailService } from 'src/mail/mail.service';
@@ -26,19 +26,37 @@ export class AuthService {
     private readonly redisService: RedisService,
   ) {}
 
-  async register(email: string) {
-    const exitingUser = await this.prismaService.user.findUnique({
-      where: { email },
-    });
+  async register(email: string, ip: string) {
+    try {
+      const isBlock = await this.redisService.blockSendOtp(ip);
+      if (!isBlock)
+        throw new UnauthorizedException(
+          'Too many requests. Please try again later.',
+        );
 
-    if (exitingUser)
-      throw new BadRequestException('Bu email allaqachon ro‘yxatdan o‘tgan.');
+      const existingUser = await this.prismaService.user.findUnique({
+        where: { email },
+      });
+      if (existingUser)
+        throw new BadRequestException('Bu email allaqachon ro‘yxatdan o‘tgan.');
 
-    await this.mail.sentOtp(email);
-    return true;
+      await this.mail.sentOtp(email);
+      return true;
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
   }
 
-  async verify(registerDto: RegisterDto) {
+  async verify(registerDto: RegisterDto, ip: string, userAgent: string) {
+    const isBlock = await this.redisService.blockVerifyOtp(
+      ip,
+      registerDto.email,
+      userAgent,
+    );
+    if (!isBlock)
+      throw new UnauthorizedException('Too many failed verify otp attempts');
+
     const result = await this.redisService.verifyOtp(
       registerDto.email,
       registerDto.otp,
@@ -81,7 +99,7 @@ export class AuthService {
     );
 
     const redisUserKey = `login_block:${user.id}`;
-    await this.redisService.login(redisUserKey, user, ip, userAgent);
+    await this.redisService.blockLogin(redisUserKey, user.email, ip, userAgent);
 
     if (!isPasswordValid) {
       throw new UnauthorizedException("Email yoki parol noto'g'ri");
@@ -136,10 +154,14 @@ export class AuthService {
     return { ...newUser, ...tokens };
   }
 
-  async getRecoveryUrl(email: string) {
+  async getRecoveryUrl(email: string, ip: string) {
     const user = await this.prismaService.user.findUnique({ where: { email } });
     if (!user)
       throw new UnauthorizedException('Bu email bilan foydalanuvchi topilmadi');
+
+    const result = await this.redisService.blockSendUrl(ip);
+    if (!result)
+      throw new UnauthorizedException('Too many failed send url attempts');
 
     if (user.password === '')
       throw new UnauthorizedException(
@@ -152,7 +174,13 @@ export class AuthService {
     return true;
   }
 
-  async recoveryAccount(token: string, password: string) {
+  async recoveryAccount(token: string, password: string, ip: string) {
+    const result = await this.redisService.blockRecoveryAccount(ip);
+    if (!result)
+      throw new UnauthorizedException(
+        'Too many failed recovery account attempts',
+      );
+
     const payload = this.tokenService.validateRecoveryToken(token);
     if (!payload) throw new UnauthorizedException('Token yaroqli emas');
 

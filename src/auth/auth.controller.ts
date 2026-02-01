@@ -20,6 +20,7 @@ import { Cookies } from './decorators/cookie.decorator';
 import { ConfigService } from '@nestjs/config';
 import { Throttle } from '@nestjs/throttler';
 import { RATE_LIMIT } from 'src/constants';
+import { getClientIp } from 'src/common/helpers/getIpAddress';
 
 @Controller('auth')
 export class AuthController {
@@ -32,8 +33,9 @@ export class AuthController {
     default: { limit: RATE_LIMIT.REGISTER.limit, ttl: RATE_LIMIT.REGISTER.ttl },
   })
   @Post('register')
-  async register(@Body() body: { email: string }) {
-    return await this.authService.register(body.email);
+  async register(@Body() body: { email: string }, @Req() req: Request) {
+    const ip = getClientIp(req);
+    return await this.authService.register(body.email, ip);
   }
 
   @Throttle({
@@ -42,9 +44,15 @@ export class AuthController {
   @Post('verify')
   async verify(
     @Body() registerDto: RegisterDto,
+    @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const data = await this.authService.verify(registerDto);
+    const ip = getClientIp(req);
+    const data = await this.authService.verify(
+      registerDto,
+      ip,
+      req.headers['user-agent'],
+    );
     res.cookie('refreshToken', data.refreshToken, {
       httpOnly: true,
       maxAge: 30 * 24 * 60 * 60 * 1000,
@@ -73,9 +81,7 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
     @Req() req: Request,
   ) {
-    const ip =
-      req.headers['x-forwarded-for']?.toString().split(',')[0] ||
-      req.socket.remoteAddress;
+    const ip = getClientIp(req);
 
     const userAgent = req.headers['user-agent'];
     const data = await this.authService.login(loginDto, ip, userAgent);
@@ -157,9 +163,15 @@ export class AuthController {
     );
   }
 
+  @Throttle({
+    default: {
+      limit: RATE_LIMIT.RECOVERY_URL.limit,
+      ttl: RATE_LIMIT.RECOVERY_URL.ttl,
+    },
+  })
   @Post('get-url')
-  async getRecoveryUrl(@Body() body: { email: string }) {
-    return this.authService.getRecoveryUrl(body.email);
+  async getRecoveryUrl(@Body() body: { email: string }, @Req() req: Request) {
+    return this.authService.getRecoveryUrl(body.email, getClientIp(req));
   }
 
   @Throttle({
@@ -169,8 +181,12 @@ export class AuthController {
   async recoveryAccount(
     @Param('token') token: string,
     @Body() body: { password: string },
+    @Req() req: Request,
   ) {
-    console.log(token, body.password);
-    return this.authService.recoveryAccount(token, body.password);
+    return this.authService.recoveryAccount(
+      token,
+      body.password,
+      getClientIp(req),
+    );
   }
 }
