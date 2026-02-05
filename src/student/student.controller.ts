@@ -8,8 +8,8 @@ import {
   Query,
 } from '@nestjs/common';
 import { StudentService } from './student.service';
-import { User } from 'src/auth/decorators/user.decorator';
-import { Auth } from 'src/auth/decorators/auth.decorator';
+import { User } from 'src/common/decorators/user.decorator';
+import { Auth } from 'src/common/decorators/auth.decorator';
 
 @Controller('student')
 export class StudentController {
@@ -25,7 +25,7 @@ export class StudentController {
     return this.studentService.enrollCourse(+courseId, userId);
   }
 
-  @HttpCode(200)
+  @HttpCode(204)
   @Delete('enrollment/:courseId')
   @Auth('STUDENT')
   async deleteEnrollment(
@@ -55,14 +55,14 @@ export class StudentController {
     return this.studentService.getUnpaidCourses(userId);
   }
 
-  @HttpCode(200)
+  @HttpCode(201)
   @Post('pay-courses')
   @Auth('STUDENT')
   async payCourses(@User('id') userId: string) {
     return this.studentService.payCourses(userId);
   }
 
-  @HttpCode(200)
+  @HttpCode(201)
   @Post('complete-lesson/:lessonId')
   @Auth('STUDENT')
   async completeLesson(

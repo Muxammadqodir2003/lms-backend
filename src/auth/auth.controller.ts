@@ -16,7 +16,7 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { AuthGuard } from '@nestjs/passport';
 import type { Request, Response } from 'express';
-import { Cookies } from './decorators/cookie.decorator';
+import { Cookies } from '../common/decorators/cookie.decorator';
 import { ConfigService } from '@nestjs/config';
 import { Throttle } from '@nestjs/throttler';
 import { RATE_LIMIT } from 'src/constants';
@@ -32,6 +32,7 @@ export class AuthController {
   @Throttle({
     default: { limit: RATE_LIMIT.REGISTER.limit, ttl: RATE_LIMIT.REGISTER.ttl },
   })
+  @HttpCode(200)
   @Post('register')
   async register(@Body() body: { email: string }, @Req() req: Request) {
     const ip = getClientIp(req);
@@ -41,6 +42,7 @@ export class AuthController {
   @Throttle({
     default: { limit: RATE_LIMIT.VERIFY.limit, ttl: RATE_LIMIT.VERIFY.ttl },
   })
+  @HttpCode(201)
   @Post('verify')
   async verify(
     @Body() registerDto: RegisterDto,
@@ -74,7 +76,7 @@ export class AuthController {
   @Throttle({
     default: { limit: RATE_LIMIT.LOGIN.limit, ttl: RATE_LIMIT.LOGIN.ttl },
   })
-  @HttpCode(HttpStatus.OK)
+  @HttpCode(200)
   @Post('login')
   async login(
     @Body() loginDto: LoginDto,
@@ -94,6 +96,7 @@ export class AuthController {
     return data;
   }
 
+  @HttpCode(200)
   @Post('refresh')
   async refresh(
     @Cookies('refreshToken') refreshToken: string,
@@ -112,6 +115,7 @@ export class AuthController {
   @Throttle({
     default: { limit: RATE_LIMIT.REGISTER.limit, ttl: RATE_LIMIT.REGISTER.ttl },
   })
+  @HttpCode(200)
   @UseGuards(AuthGuard('google'))
   @Get('google')
   async googleLogin() {}
@@ -119,6 +123,7 @@ export class AuthController {
   @Throttle({
     default: { limit: RATE_LIMIT.REGISTER.limit, ttl: RATE_LIMIT.REGISTER.ttl },
   })
+  @HttpCode(201)
   @UseGuards(AuthGuard('google'))
   @Get('callback/google')
   async googleLoginRedirect(
@@ -139,6 +144,7 @@ export class AuthController {
   @Throttle({
     default: { limit: RATE_LIMIT.REGISTER.limit, ttl: RATE_LIMIT.REGISTER.ttl },
   })
+  @HttpCode(200)
   @UseGuards(AuthGuard('github'))
   @Get('github')
   async githubLogin() {}
@@ -146,6 +152,7 @@ export class AuthController {
   @Throttle({
     default: { limit: RATE_LIMIT.REGISTER.limit, ttl: RATE_LIMIT.REGISTER.ttl },
   })
+  @HttpCode(201)
   @UseGuards(AuthGuard('github'))
   @Get('callback/github')
   async githubLoginRedirect(
@@ -169,6 +176,7 @@ export class AuthController {
       ttl: RATE_LIMIT.RECOVERY_URL.ttl,
     },
   })
+  @HttpCode(200)
   @Post('get-url')
   async getRecoveryUrl(@Body() body: { email: string }, @Req() req: Request) {
     return this.authService.getRecoveryUrl(body.email, getClientIp(req));
@@ -177,6 +185,7 @@ export class AuthController {
   @Throttle({
     default: { limit: RATE_LIMIT.RECOVERY.limit, ttl: RATE_LIMIT.RECOVERY.ttl },
   })
+  @HttpCode(200)
   @Post('recovery-account/:token')
   async recoveryAccount(
     @Param('token') token: string,

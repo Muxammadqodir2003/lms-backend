@@ -14,9 +14,9 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { CourseService } from './course.service';
-import { Auth } from 'src/auth/decorators/auth.decorator';
+import { Auth } from 'src/common/decorators/auth.decorator';
 import { CourseDto } from './dto/courseDto';
-import { User } from 'src/auth/decorators/user.decorator';
+import { User } from 'src/common/decorators/user.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UpdateDto } from './dto/updateDto';
 import { SupabaseService } from 'src/supabase/supabase.service';
@@ -103,14 +103,14 @@ export class CourseController {
     return await this.courseService.getAllCourses(query);
   }
 
-  @HttpCode(200)
+  @HttpCode(201)
   @Post('active/:slug')
   @Auth('INSTRUCTOR')
   async activeCourse(@Param('slug') slug: string) {
     return await this.courseService.activeCourse(slug);
   }
 
-  @HttpCode(200)
+  @HttpCode(201)
   @Post('deactive/:slug')
   @Auth('INSTRUCTOR')
   async deactiveCourse(@Param('slug') slug: string) {

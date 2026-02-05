@@ -15,9 +15,9 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { LessonService } from './lesson.service';
 import { LessonDto } from './dto/lesson.dto';
-import { Auth } from 'src/auth/decorators/auth.decorator';
+import { Auth } from 'src/common/decorators/auth.decorator';
 import { VideoService } from 'src/common/video.service';
-import { User } from 'src/auth/decorators/user.decorator';
+import { User } from 'src/common/decorators/user.decorator';
 import { SupabaseService } from 'src/supabase/supabase.service';
 import { diskStorage } from 'multer';
 import * as fs from 'fs/promises';
@@ -30,6 +30,7 @@ export class LessonController {
     private readonly supabaseService: SupabaseService,
   ) {}
 
+  @HttpCode(201)
   @Post('create/:sectionId')
   @UseInterceptors(
     FileInterceptor('video', {
@@ -69,16 +70,19 @@ export class LessonController {
     );
   }
 
+  @HttpCode(200)
   @Get('get-all/:sectionId')
   async getAll(@Param('sectionId') sectionId: string) {
     return await this.lessonService.getAll(+sectionId);
   }
 
+  @HttpCode(204)
   @Delete('delete/:lessonId')
   async deleteLesson(@Param('lessonId') lessonId: string) {
     return await this.lessonService.deleteLesson(+lessonId);
   }
 
+  @HttpCode(200)
   @Patch('update/:lessonId')
   @UseInterceptors(
     FileInterceptor('video', {
@@ -120,7 +124,7 @@ export class LessonController {
     );
   }
 
-  @HttpCode(204)
+  @HttpCode(200)
   @Auth('INSTRUCTOR')
   @Patch('reorder')
   async reorderLesson(
@@ -150,7 +154,7 @@ export class LessonController {
     return await this.lessonService.getCurrentLessonBySlug(slug, userId);
   }
 
-  @HttpCode(200)
+  @HttpCode(201)
   @Auth('STUDENT')
   @Post('completed/:lessonId')
   async lessonCompleted(
