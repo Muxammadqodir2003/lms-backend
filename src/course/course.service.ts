@@ -18,30 +18,35 @@ export class CourseService {
     image: string,
     instructorId: string,
   ) {
-    const instructor = await this.prismaService.instructorProfile.findUnique({
-      where: { userId: instructorId },
-    });
-    if (!instructor.isActive)
-      throw new BadRequestException(
-        'Siz hozirda kurs joylay olmaysiz sizning hisobingiz faollashtirilmagan iltimos admin sizni hisobingizni faollashtirirshini kuting',
-      );
-    let course = await this.prismaService.course.findUnique({
-      where: { slug: courseDto.slug },
-    });
-    if (course) throw new BadRequestException("Slug noyob bo'lishi kerak");
-    course = await this.prismaService.course.create({
-      data: {
-        ...courseDto,
-        requirements: courseDto.requirements.split(','),
-        whatsLearn: courseDto.whatsLearn.split(','),
-        tags: courseDto.tags.split(','),
-        price: +courseDto.price,
-        image,
-        instructorId,
-      },
-    });
+    try {
+      const instructor = await this.prismaService.instructorProfile.findUnique({
+        where: { userId: instructorId },
+      });
+      if (!instructor.isActive)
+        throw new BadRequestException(
+          'Siz hozirda kurs joylay olmaysiz sizning hisobingiz faollashtirilmagan iltimos admin sizni hisobingizni faollashtirirshini kuting',
+        );
+      let course = await this.prismaService.course.findUnique({
+        where: { slug: courseDto.slug },
+      });
+      if (course) throw new BadRequestException("Slug noyob bo'lishi kerak");
+      course = await this.prismaService.course.create({
+        data: {
+          ...courseDto,
+          requirements: courseDto.requirements.split(','),
+          whatsLearn: courseDto.whatsLearn.split(','),
+          tags: courseDto.tags.split(','),
+          price: +courseDto.price,
+          image,
+          instructorId,
+        },
+      });
 
-    return course;
+      return course;
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
   }
 
   async updateCourse(

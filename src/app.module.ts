@@ -20,6 +20,7 @@ import Redis from 'ioredis';
 import { APP_GUARD } from '@nestjs/core';
 import { RedisModule } from './redis/redis.module';
 import { CustomThrottlerGuard } from './common/guards/throttler.guard';
+import { CommentModule } from './comment/comment.module';
 
 @Module({
   imports: [
@@ -65,6 +66,7 @@ import { CustomThrottlerGuard } from './common/guards/throttler.guard';
     LessonModule,
     PrismaModule,
     RedisModule,
+    CommentModule,
   ],
   controllers: [],
   providers: [

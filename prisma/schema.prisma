@@ -16,6 +16,7 @@ model User {
   token             Token?
   instructorProfile InstructorProfile?
   enrollments       Enrollement[]
+  comments          Comment[]
 }
 
 enum Role {
@@ -40,6 +41,7 @@ model InstructorProfile {
   language  String
   social    String
   userId    String
+  rating    Float?
   isActive  Boolean  @default(false)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   courses   Course[]
@@ -61,7 +63,7 @@ model Course {
   price        Int
   language     String
   image        String
-  rating       Int?
+  rating       Float?
   sections     Section[]
   isPublished  Boolean   @default(false)
   createdAt    DateTime  @default(now())
@@ -71,6 +73,7 @@ model Course {
   instructor   InstructorProfile @relation(fields: [instructorId], references: [userId], onDelete: Cascade)
 
   enrollments Enrollement[]
+  comments    Comment[]
 }
 
 model Section {
@@ -113,6 +116,21 @@ model LessonProgress {
   lessonId Int
 
   @@unique([userId, lessonId])
+}
+
+model Comment {
+  id       Int    @id @default(autoincrement())
+  comment  String
+  rating   Float
+  userId   String
+  courseId Int
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, courseId])
 }
 
 model Log {

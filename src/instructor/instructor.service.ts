@@ -70,8 +70,15 @@ export class InstructorService {
   }
 
   async getInstructorById(id: string) {
-    return await this.prismaService.instructorProfile.findUnique({
+    const instructor = await this.prismaService.instructorProfile.findUnique({
       where: { userId: id },
     });
+    const courses = await this.prismaService.course.findMany({
+      where: { instructorId: id },
+    });
+    const studentCount = await this.prismaService.enrollement.count({
+      where: { courseId: { in: courses.map((course) => course.id) } },
+    });
+    return { instructor, coursesCount: courses.length, studentCount };
   }
 }
