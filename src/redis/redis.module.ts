@@ -10,7 +10,9 @@ import { RedisService } from './redis.service';
       provide: 'REDIS_CLIENT',
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {
-        return new Redis(config.get('REDIS_URL'), {
+        return new Redis({
+          host: config.get('REDIS_HOST'),
+          port: config.get('REDIS_PORT'),
           tls: {
             rejectUnauthorized: false,
           },

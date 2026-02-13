@@ -43,7 +43,9 @@ import { CommentModule } from './comment/comment.module';
         ],
         errorMessage: 'Too many requests. Please try again after a minute.',
         storage: new ThrottlerStorageRedisService(
-          new Redis(config.get('REDIS_URL'), {
+          new Redis({
+            host: config.get('REDIS_HOST'),
+            port: config.get('REDIS_PORT'),
             tls: {
               rejectUnauthorized: false,
             },
