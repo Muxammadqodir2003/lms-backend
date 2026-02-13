@@ -46,9 +46,6 @@ import { CommentModule } from './comment/comment.module';
           new Redis({
             host: config.get('REDIS_HOST'),
             port: config.get('REDIS_PORT'),
-            tls: {
-              rejectUnauthorized: false,
-            },
             retryStrategy(times) {
               return Math.min(times * 50, 2000);
             },
