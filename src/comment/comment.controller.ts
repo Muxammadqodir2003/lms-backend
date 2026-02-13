@@ -5,7 +5,9 @@ import { CommentDto } from './dto/commentDto';
 import { User } from 'src/common/decorators/user.decorator';
 import { Throttle } from '@nestjs/throttler';
 import { RATE_LIMIT } from 'src/constants';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('Comment')
 @Controller('comment')
 export class CommentController {
   constructor(private readonly commentService: CommentService) {}
@@ -14,6 +16,8 @@ export class CommentController {
     default: { limit: RATE_LIMIT.COMMENT.limit, ttl: RATE_LIMIT.COMMENT.ttl },
   })
   @HttpCode(201)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create comment' })
   @Auth('STUDENT')
   @Post(':slug')
   async createComment(
@@ -25,6 +29,8 @@ export class CommentController {
   }
 
   @HttpCode(200)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get comments by course id' })
   @Auth('STUDENT')
   @Get('get-all/:slug')
   async getCommentsByCourseId(@Param('slug') slug: string) {
@@ -32,6 +38,8 @@ export class CommentController {
   }
 
   @HttpCode(200)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get comment one' })
   @Auth('STUDENT')
   @Get(':slug')
   async getCommentOne(@Param('slug') slug: string, @User('id') userId: string) {

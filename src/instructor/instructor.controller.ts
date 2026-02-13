@@ -12,7 +12,9 @@ import { InstructorService } from './instructor.service';
 import { User } from 'src/common/decorators/user.decorator';
 import { Auth } from 'src/common/decorators/auth.decorator';
 import { Throttle } from '@nestjs/throttler';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('Instructor')
 @Controller('instructor')
 export class InstructorController {
   constructor(private readonly instructorService: InstructorService) {}
@@ -24,6 +26,8 @@ export class InstructorController {
     },
   })
   @HttpCode(201)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Become instructor' })
   @Post('become-instructor')
   @Auth('STUDENT')
   async becomeInstructor(
@@ -34,6 +38,8 @@ export class InstructorController {
   }
 
   @HttpCode(200)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get all courses' })
   @Get('get-all')
   @Auth('INSTRUCTOR')
   async getAllCourses(@User('id') id: string) {
@@ -41,6 +47,8 @@ export class InstructorController {
   }
 
   @HttpCode(200)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get course detail' })
   @Get('course/:slug')
   @Auth('INSTRUCTOR')
   async getCourseDetail(@Param('slug') slug: string) {
@@ -48,6 +56,8 @@ export class InstructorController {
   }
 
   @HttpCode(200)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get all instructor' })
   @Get('all')
   async getAllInstructor(
     @Query('page') page: string,

@@ -16,7 +16,7 @@ export class StudentService {
 
     const course = await this.prismaService.course.findUnique({
       where: { id: courseId },
-      include: { sections: { include: { lessons: true } } },
+      include: { sections: { include: { lessons: { select: { id: true } } } } },
     });
 
     if (enrollment)
@@ -29,6 +29,7 @@ export class StudentService {
         currentLessonId: course.sections[0].lessons[0].id,
       },
     });
+
     return enrollment;
   }
 
@@ -46,7 +47,13 @@ export class StudentService {
   async getUnpaidCourses(userId: string) {
     return await this.prismaService.enrollement.findMany({
       where: { userId, status: 'PENDING' },
-      include: { course: { include: { instructor: true } } },
+      include: {
+        course: {
+          include: {
+            instructor: { select: { firstName: true, lastName: true } },
+          },
+        },
+      },
     });
   }
 
@@ -70,6 +77,25 @@ export class StudentService {
         where: { userId },
         data: { status: 'PAID' },
       });
+
+      const enrollments = await this.prismaService.enrollement.findMany({
+        where: { userId },
+      });
+
+      const allCourses = await this.prismaService.course.findMany({
+        where: { id: { in: enrollments.map((e) => e.courseId) } },
+      });
+
+      for (const course of allCourses) {
+        await this.prismaService.instructorProfile.update({
+          where: { userId: course.instructorId },
+          data: { studentsCount: { increment: 1 } },
+        });
+        await this.prismaService.course.update({
+          where: { id: course.id },
+          data: { studentsCount: { increment: 1 } },
+        });
+      }
     } catch (error) {
       throw error;
     }

@@ -12,12 +12,16 @@ import { SectionService } from './section.service';
 import { Auth } from 'src/common/decorators/auth.decorator';
 import { SectionDto } from './dto/section.dto';
 import { User } from 'src/common/decorators/user.decorator';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('Section')
 @Controller('section')
 export class SectionController {
   constructor(private readonly sectionService: SectionService) {}
 
   @HttpCode(201)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create section' })
   @Post('create/:slug')
   @Auth('INSTRUCTOR')
   async create(@Body() sectionDto: SectionDto, @Param('slug') slug: string) {
@@ -26,6 +30,8 @@ export class SectionController {
   }
 
   @HttpCode(200)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get all sections' })
   @Get('get-all/:slug')
   @Auth('INSTRUCTOR')
   async getAll(@Param('slug') slug: string) {
@@ -33,6 +39,8 @@ export class SectionController {
   }
 
   @HttpCode(204)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Delete section' })
   @Delete('delete/:sectionId')
   @Auth('INSTRUCTOR')
   async delete(@Param('sectionId') sectionId: string) {
@@ -40,6 +48,8 @@ export class SectionController {
   }
 
   @HttpCode(200)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update section' })
   @Patch('update/:sectionId')
   @Auth('INSTRUCTOR')
   async update(
@@ -50,6 +60,8 @@ export class SectionController {
   }
 
   @HttpCode(200)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Reorder section' })
   @Patch('reorder')
   @Auth('INSTRUCTOR')
   async reorder(
@@ -59,6 +71,8 @@ export class SectionController {
   }
 
   @HttpCode(200)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get section by course slug' })
   @Get('get-by-course-slug/:slug')
   @Auth('STUDENT')
   async getByCourseSlug(

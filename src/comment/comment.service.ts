@@ -84,7 +84,20 @@ export class CommentService {
       },
     });
 
-    return true;
+    const commentsCount = await this.prisma.comment.count({
+      where: {
+        courseId: course.id,
+      },
+    });
+
+    await this.prisma.course.update({
+      where: {
+        id: course.id,
+      },
+      data: {
+        commentsCount,
+      },
+    });
   }
 
   async getCommentsByCourseId(slug: string) {
@@ -101,6 +114,9 @@ export class CommentService {
     return await this.prisma.comment.findMany({
       where: {
         courseId: course.id,
+      },
+      include: {
+        user: true,
       },
     });
   }

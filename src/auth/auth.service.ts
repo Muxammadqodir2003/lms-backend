@@ -43,7 +43,6 @@ export class AuthService {
       await this.mail.sentOtp(email);
       return true;
     } catch (error) {
-      console.log(error);
       throw error;
     }
   }
@@ -86,29 +85,38 @@ export class AuthService {
   }
 
   async login(loginDto: LoginDto, ip: string, userAgent: string) {
-    const user = await this.prismaService.user.findUnique({
-      where: { email: loginDto.email },
-    });
+    try {
+      const user = await this.prismaService.user.findUnique({
+        where: { email: loginDto.email },
+      });
 
-    if (!user)
-      throw new UnauthorizedException('Bunday foydalanuvchi topilmadi');
+      if (!user)
+        throw new UnauthorizedException('Bunday foydalanuvchi topilmadi');
 
-    const isPasswordValid = await bcrypt.compare(
-      loginDto.password,
-      user.password,
-    );
+      const isPasswordValid = await bcrypt.compare(
+        loginDto.password,
+        user.password,
+      );
 
-    const redisUserKey = `login_block:${user.id}`;
-    await this.redisService.blockLogin(redisUserKey, user.email, ip, userAgent);
+      const redisUserKey = `login_block:${user.id}`;
+      await this.redisService.blockLogin(
+        redisUserKey,
+        user.email,
+        ip,
+        userAgent,
+      );
 
-    if (!isPasswordValid) {
-      throw new UnauthorizedException("Email yoki parol noto'g'ri");
+      if (!isPasswordValid) {
+        throw new UnauthorizedException("Email yoki parol noto'g'ri");
+      }
+
+      const tokens = this.tokenService.generateTokens(user.id);
+      await this.tokenService.saveToken(tokens.refreshToken, user.id);
+      await this.redisService.deleteBlock(redisUserKey, user.id);
+      return { ...user, ...tokens };
+    } catch (error) {
+      throw error;
     }
-
-    const tokens = this.tokenService.generateTokens(user.id);
-    await this.tokenService.saveToken(tokens.refreshToken, user.id);
-    await this.redisService.deleteBlock(redisUserKey, user.id);
-    return { ...user, ...tokens };
   }
 
   async refresh(refreshToken: string) {

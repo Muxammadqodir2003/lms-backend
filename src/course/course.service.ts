@@ -4,6 +4,7 @@ import { CourseDto } from './dto/courseDto';
 import { UpdateDto } from './dto/updateDto';
 import { SupabaseService } from 'src/supabase/supabase.service';
 import { RedisService } from 'src/redis/redis.service';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class CourseService {
@@ -40,6 +41,15 @@ export class CourseService {
           image,
           instructorId,
         },
+      });
+
+      const coursesCount = await this.prismaService.course.count({
+        where: { instructorId },
+      });
+
+      await this.prismaService.instructorProfile.update({
+        where: { userId: instructorId },
+        data: { coursesCount },
       });
 
       return course;
@@ -79,51 +89,33 @@ export class CourseService {
   }
 
   async getCourse(slug: string) {
-    const course = await this.prismaService.course.findUnique({
+    return await this.prismaService.course.findUnique({
       where: { slug },
-      include: {
-        sections: {
-          include: {
-            lessons: true,
-          },
-        },
-      },
     });
-    const studentsCount = await this.prismaService.enrollement.count({
-      where: { courseId: course.id },
-    });
-    return { ...course, studentsCount };
   }
 
   async getAllCourses(query: any) {
-    const courses = await this.prismaService.course.findMany({
-      where: {
-        category: query.category ? query.category : undefined,
-        level: query.level ? query.level : undefined,
-        language: query.language ? query.language : undefined,
-        rating: query.rating ? Number(query.rating) : undefined,
-        isPublished: true,
-      },
-      include: {
-        sections: {
-          include: {
-            lessons: true,
-          },
-        },
-      },
-      skip: query.page ? (query.page - 1) * 10 : undefined,
-      take: 10,
-    });
-    const totalCourses = await this.prismaService.course.count({
-      where: {
-        category: query.category ? query.category : undefined,
-        level: query.level ? query.level : undefined,
-        language: query.language ? query.language : undefined,
-        rating: query.rating ? Number(query.rating) : undefined,
-        isPublished: true,
-      },
-    });
-    return { courses, totalCourses };
+    const { category, level, language, rating, page = 1 } = query;
+
+    const whereCondition: Prisma.CourseWhereInput = {
+      isPublished: true,
+      category: category ? category : undefined,
+      level: level ? level : undefined,
+      language: language ? language : undefined,
+      rating: rating ? { gte: Number(rating) } : undefined,
+    };
+
+    const [total, courses] = await this.prismaService.$transaction([
+      this.prismaService.course.count({ where: whereCondition }),
+      this.prismaService.course.findMany({
+        where: whereCondition,
+        skip: (page - 1) * 10,
+        take: 10,
+        orderBy: { createdAt: 'desc' },
+      }),
+    ]);
+
+    return { courses, totalCourses: total };
   }
 
   async activeCourse(slug: string) {
@@ -180,6 +172,17 @@ export class CourseService {
     if (course.image) {
       await this.supabaseService.deleteImage(course.image);
     }
-    return await this.prismaService.course.delete({ where: { slug } });
+    const deletedCourse = await this.prismaService.course.delete({
+      where: { slug },
+    });
+
+    const coursesCount = await this.prismaService.course.count({
+      where: { instructorId: course.instructorId },
+    });
+    await this.prismaService.instructorProfile.update({
+      where: { userId: course.instructorId },
+      data: { coursesCount },
+    });
+    return deletedCourse;
   }
 }

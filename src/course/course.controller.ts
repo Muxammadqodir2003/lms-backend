@@ -23,7 +23,9 @@ import { SupabaseService } from 'src/supabase/supabase.service';
 import type { Request } from 'express';
 import { Throttle } from '@nestjs/throttler';
 import { RATE_LIMIT } from 'src/constants';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('Course')
 @Controller('course')
 export class CourseController {
   constructor(
@@ -32,6 +34,8 @@ export class CourseController {
   ) {}
 
   @HttpCode(201)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create course' })
   @Post('create')
   @UseInterceptors(
     FileInterceptor('image', {
@@ -58,6 +62,8 @@ export class CourseController {
   }
 
   @HttpCode(200)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update course' })
   @Patch('update/:courseId')
   @UseInterceptors(
     FileInterceptor('image', {
@@ -89,6 +95,8 @@ export class CourseController {
   }
 
   @HttpCode(200)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get course by slug' })
   @Get('get-course-by-slug/:slug')
   @Auth('STUDENT')
   async getCourse(@Param('slug') slug: string) {
@@ -96,14 +104,17 @@ export class CourseController {
   }
 
   @HttpCode(200)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get all courses' })
   @Get('get-all-courses')
   @Auth('STUDENT')
   async getAllCourses(@Query() query: any) {
-    console.log(query);
     return await this.courseService.getAllCourses(query);
   }
 
   @HttpCode(201)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Active course' })
   @Post('active/:slug')
   @Auth('INSTRUCTOR')
   async activeCourse(@Param('slug') slug: string) {
@@ -111,6 +122,8 @@ export class CourseController {
   }
 
   @HttpCode(201)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Deactive course' })
   @Post('deactive/:slug')
   @Auth('INSTRUCTOR')
   async deactiveCourse(@Param('slug') slug: string) {
@@ -124,6 +137,8 @@ export class CourseController {
     },
   })
   @HttpCode(200)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Delete course' })
   @Delete('delete/:slug')
   @Auth('INSTRUCTOR')
   async deleteCourse(@Param('slug') slug: string, @Req() req: Request) {

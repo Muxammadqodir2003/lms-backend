@@ -2,12 +2,16 @@ import { Controller, Get, HttpCode, Param, Post, Query } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { Auth } from 'src/common/decorators/auth.decorator';
 import { User } from 'src/common/decorators/user.decorator';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('Admin')
 @Controller('admin')
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
   @HttpCode(200)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Approve instructor' })
   @Post('approve-instructor/:id')
   @Auth('ADMIN')
   async approveInstructor(
@@ -18,6 +22,8 @@ export class AdminController {
   }
 
   @HttpCode(200)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Deactivate instructor' })
   @Post('deactivate-instructor/:id')
   @Auth('ADMIN')
   async deactivate(@Param('id') id: string) {
@@ -25,6 +31,8 @@ export class AdminController {
   }
 
   @HttpCode(200)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get logs' })
   @Get('logs')
   @Auth('ADMIN')
   async getLogs(@Query('page') page: string) {

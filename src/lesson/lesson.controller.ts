@@ -21,7 +21,9 @@ import { User } from 'src/common/decorators/user.decorator';
 import { SupabaseService } from 'src/supabase/supabase.service';
 import { diskStorage } from 'multer';
 import * as fs from 'fs/promises';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('Lesson')
 @Controller('lesson')
 export class LessonController {
   constructor(
@@ -31,6 +33,8 @@ export class LessonController {
   ) {}
 
   @HttpCode(201)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create lesson' })
   @Post('create/:sectionId')
   @UseInterceptors(
     FileInterceptor('video', {
@@ -71,18 +75,24 @@ export class LessonController {
   }
 
   @HttpCode(200)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get all lessons' })
   @Get('get-all/:sectionId')
   async getAll(@Param('sectionId') sectionId: string) {
     return await this.lessonService.getAll(+sectionId);
   }
 
   @HttpCode(204)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Delete lesson' })
   @Delete('delete/:lessonId')
   async deleteLesson(@Param('lessonId') lessonId: string) {
     return await this.lessonService.deleteLesson(+lessonId);
   }
 
   @HttpCode(200)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update lesson' })
   @Patch('update/:lessonId')
   @UseInterceptors(
     FileInterceptor('video', {
@@ -125,6 +135,8 @@ export class LessonController {
   }
 
   @HttpCode(200)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Reorder lesson' })
   @Auth('INSTRUCTOR')
   @Patch('reorder')
   async reorderLesson(
@@ -134,6 +146,8 @@ export class LessonController {
   }
 
   @HttpCode(200)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get lesson by id' })
   @Auth('STUDENT')
   @Get('get-by-id/:lessonId')
   async getLessonById(
@@ -145,6 +159,8 @@ export class LessonController {
   }
 
   @HttpCode(200)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get current lesson by slug' })
   @Auth('STUDENT')
   @Get('get-current-lesson-by-slug/:slug')
   async getCurrentLessonBySlug(
@@ -155,6 +171,8 @@ export class LessonController {
   }
 
   @HttpCode(201)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Lesson completed' })
   @Auth('STUDENT')
   @Post('completed/:lessonId')
   async lessonCompleted(

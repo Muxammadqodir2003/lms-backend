@@ -35,54 +35,69 @@ model Token {
 }
 
 model InstructorProfile {
-  firstName String
-  lastName  String
-  job       String
-  language  String
-  social    String
-  userId    String
-  rating    Float?
-  isActive  Boolean  @default(false)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  courses   Course[]
+  firstName     String
+  lastName      String
+  job           String
+  language      String
+  social        String
+  userId        String
+  rating        Float?
+  coursesCount  Int?     @default(0)
+  studentsCount Int?     @default(0)
+  isActive      Boolean  @default(false)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courses       Course[]
 
   @@unique([userId])
 }
 
 model Course {
-  id           Int       @id @default(autoincrement())
-  slug         String    @unique
-  title        String
-  subTitle     String
-  whatsLearn   String[]
-  requirements String[]
-  tags         String[]
-  description  String
-  level        String
-  category     String
-  price        Int
-  language     String
-  image        String
-  rating       Float?
-  sections     Section[]
-  isPublished  Boolean   @default(false)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id            Int       @id @default(autoincrement())
+  slug          String    @unique
+  title         String
+  subTitle      String
+  whatsLearn    String[]
+  requirements  String[]
+  tags          String[]
+  description   String
+  level         String
+  category      String
+  price         Int
+  language      String
+  image         String
+  rating        Float?
+  totalDuration Int?      @default(0)
+  commentsCount Int?      @default(0)
+  totalLessons  Int?      @default(0)
+  studentsCount Int?      @default(0)
+  sections      Section[]
+  isPublished   Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   instructorId String
   instructor   InstructorProfile @relation(fields: [instructorId], references: [userId], onDelete: Cascade)
 
   enrollments Enrollement[]
   comments    Comment[]
+
+  @@index([category])
+  @@index([level])
+  @@index([language])
+  @@index([isPublished, category])
+  @@index([isPublished, rating])
 }
 
 model Section {
-  id         Int      @id @default(autoincrement())
-  name       String
-  orderIndex Int
-  courseId   Int
-  course     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  lessons    Lesson[]
+  id            Int      @id @default(autoincrement())
+  name          String
+  orderIndex    Int
+  courseId      Int
+  totalDuration Int?     @default(0)
+  totalLessons  Int?     @default(0)
+  lessonsCount  Int?     @default(0)
+  course        Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons       Lesson[]
 }
 
 model Lesson {

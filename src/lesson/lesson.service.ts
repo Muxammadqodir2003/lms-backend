@@ -16,23 +16,31 @@ export class LessonService {
     sectionId: number,
     duration: number,
   ) {
+    const lessonsCount = await this.prismaService.lesson.aggregate({
+      where: { sectionId },
+      _count: true,
+    });
+
     const section = await this.prismaService.section.findUnique({
       where: { id: sectionId },
-      include: { lessons: true },
     });
-    return await this.prismaService.lesson.create({
+
+    const lesson = await this.prismaService.lesson.create({
       data: {
         ...lessonDto,
         video,
         sectionId,
-        orderIndex: section.lessons.length + 1,
+        orderIndex: lessonsCount._count + 1,
         duration,
       },
     });
+
+    await this.updateCourseStats(section.courseId, sectionId);
+    return lesson;
   }
 
   async getAll(sectionId: number) {
-    return this.prismaService.lesson.findMany({ where: { sectionId } });
+    return await this.prismaService.lesson.findMany({ where: { sectionId } });
   }
 
   async getLessonById(lessonId: number, slug: string, userId: string) {
@@ -74,7 +82,16 @@ export class LessonService {
     if (lesson.video) {
       await this.supabaseService.deleteVideo(lesson.video);
     }
-    return this.prismaService.lesson.delete({ where: { id: lessonId } });
+    const deletedLesson = await this.prismaService.lesson.delete({
+      where: { id: lessonId },
+    });
+
+    const section = await this.prismaService.section.findUnique({
+      where: { id: lesson.sectionId },
+    });
+
+    await this.updateCourseStats(section.courseId, section.id);
+    return deletedLesson;
   }
 
   async reorderLesson(lessons: { id: number; orderIndex: number }[]) {
@@ -112,9 +129,55 @@ export class LessonService {
         data: { ...lessonDto, duration: lesson.duration, video: lesson.video },
       });
     }
-    return await this.prismaService.lesson.update({
+    const updatedLesson = await this.prismaService.lesson.update({
       where: { id: lessonId },
       data: { ...lessonDto, duration, video: videoUrl },
+    });
+
+    const section = await this.prismaService.section.findUnique({
+      where: { id: updatedLesson.sectionId },
+      select: { courseId: true, id: true },
+    });
+
+    await this.updateCourseStats(section.courseId, section.id);
+    return updatedLesson;
+  }
+
+  async updateCourseStats(courseId: number, sectionId: number) {
+    const sectionAggregate = await this.prismaService.lesson.aggregate({
+      where: { sectionId: sectionId },
+      _sum: { duration: true },
+      _count: { id: true },
+    });
+
+    const sectionDuration = sectionAggregate._sum.duration || 0;
+    const sectionLessonsCount = sectionAggregate._count.id || 0;
+
+    await this.prismaService.section.update({
+      where: { id: sectionId },
+      data: {
+        totalDuration: sectionDuration,
+        lessonsCount: sectionLessonsCount,
+      },
+    });
+
+    const courseAggregate = await this.prismaService.section.aggregate({
+      where: { courseId },
+      _sum: {
+        totalDuration: true,
+        lessonsCount: true,
+      },
+    });
+
+    const totalDuration = courseAggregate._sum.totalDuration || 0;
+    const totalLessons = courseAggregate._sum.lessonsCount || 0;
+
+    await this.prismaService.course.update({
+      where: { id: courseId },
+      data: {
+        totalDuration: totalDuration,
+        totalLessons: totalLessons,
+      },
     });
   }
 }
