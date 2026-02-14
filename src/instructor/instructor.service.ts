@@ -46,14 +46,12 @@ export class InstructorService {
       throw new BadRequestException('Bunday foydalanuvchi id si topilmadi');
     return await this.prismaService.course.findMany({
       where: { instructorId: id },
-      include: { sections: { include: { lessons: true } } },
     });
   }
 
   async getCourseDetail(slug: string) {
     return await this.prismaService.course.findUnique({
       where: { slug },
-      include: { sections: { include: { lessons: true } } },
     });
   }
 

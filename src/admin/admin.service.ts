@@ -45,7 +45,7 @@ export class AdminService {
         orderBy: { createdAt: 'desc' },
       });
     } catch (error) {
-      console.log(error);
+      throw error;
     }
   }
 }

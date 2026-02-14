@@ -54,7 +54,6 @@ export class CourseService {
 
       return course;
     } catch (error) {
-      console.log(error);
       throw error;
     }
   }

@@ -103,19 +103,16 @@ export class StudentService {
 
   async completeLesson(lessonId: number, userId: string, slug: string) {
     try {
-      // 1. LessonProgress yaratishga urinib ko‘ramiz
       await this.prismaService.lessonProgress.create({
         data: { userId, lessonId },
       });
     } catch (error) {
-      // 2. Agar unique constraint buzilsa — demak tugatib bo‘lgan
       if (error.code === 'P2002') {
         throw new BadRequestException('Siz bu darsni allaqachon tugatgansiz!');
       }
       throw error;
     }
 
-    // 3. Course ni olish
     const course = await this.prismaService.course.findUnique({
       where: { slug },
       include: { sections: { include: { lessons: true } } },
@@ -125,7 +122,6 @@ export class StudentService {
       throw new NotFoundException('Kurs topilmadi');
     }
 
-    // 4. Enrollement tekshiruvi
     const enrollement = await this.prismaService.enrollement.findUnique({
       where: { userId_courseId: { userId, courseId: course.id } },
     });
@@ -134,7 +130,6 @@ export class StudentService {
       throw new BadRequestException('Siz bu kursga yozilmagansiz');
     }
 
-    // 5. Barcha darslar
     const allLessons = course.sections
       .flatMap((section) => section.lessons)
       .sort((a, b) => a.orderIndex - b.orderIndex);
@@ -153,7 +148,6 @@ export class StudentService {
       throw new NotFoundException('Dars topilmadi');
     }
 
-    // 6. Keyingi dars
     const nextLesson =
       allLessons.find(
         (l) =>
@@ -161,7 +155,6 @@ export class StudentService {
           !completedLessonIds.includes(l.id),
       ) || allLessons.find((l) => !completedLessonIds.includes(l.id));
 
-    // 7. Progressni aniq hisoblash
     const progress = Math.min(
       Math.round((completedLessonIds.length / allLessons.length) * 100),
       100,

@@ -28,7 +28,9 @@ export class SectionService {
     });
     return await this.prismaService.section.findMany({
       where: { courseId: course.id },
-      include: { lessons: true },
+      include: {
+        lessons: { select: { id: true, duration: true, name: true } },
+      },
       orderBy: { orderIndex: 'asc' },
     });
   }
