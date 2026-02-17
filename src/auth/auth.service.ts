@@ -27,24 +27,20 @@ export class AuthService {
   ) {}
 
   async register(email: string, ip: string) {
-    try {
-      const isBlock = await this.redisService.blockSendOtp(ip);
-      if (!isBlock)
-        throw new UnauthorizedException(
-          'Too many requests. Please try again later.',
-        );
+    const isBlock = await this.redisService.blockSendOtp(ip);
+    if (!isBlock)
+      throw new UnauthorizedException(
+        'Too many requests. Please try again later.',
+      );
 
-      const existingUser = await this.prismaService.user.findUnique({
-        where: { email },
-      });
-      if (existingUser)
-        throw new BadRequestException('Bu email allaqachon ro‘yxatdan o‘tgan.');
+    const existingUser = await this.prismaService.user.findUnique({
+      where: { email },
+    });
+    if (existingUser)
+      throw new BadRequestException('Bu email allaqachon ro‘yxatdan o‘tgan.');
 
-      await this.mail.sentOtp(email);
-      return true;
-    } catch (error) {
-      throw error;
-    }
+    await this.mail.sentOtp(email);
+    return true;
   }
 
   async verify(registerDto: RegisterDto, ip: string, userAgent: string) {
@@ -85,58 +81,45 @@ export class AuthService {
   }
 
   async login(loginDto: LoginDto, ip: string, userAgent: string) {
-    try {
-      const user = await this.prismaService.user.findUnique({
-        where: { email: loginDto.email },
-      });
+    const user = await this.prismaService.user.findUnique({
+      where: { email: loginDto.email },
+    });
 
-      if (!user)
-        throw new UnauthorizedException('Bunday foydalanuvchi topilmadi');
+    if (!user)
+      throw new UnauthorizedException('Bunday foydalanuvchi topilmadi');
 
-      const isPasswordValid = await bcrypt.compare(
-        loginDto.password,
-        user.password,
-      );
+    const isPasswordValid = await bcrypt.compare(
+      loginDto.password,
+      user.password,
+    );
 
-      const redisUserKey = `login_block:${user.id}`;
-      await this.redisService.blockLogin(
-        redisUserKey,
-        user.email,
-        ip,
-        userAgent,
-      );
+    const redisUserKey = `login_block:${user.id}`;
+    await this.redisService.blockLogin(redisUserKey, user.email, ip, userAgent);
 
-      if (!isPasswordValid) {
-        throw new UnauthorizedException("Email yoki parol noto'g'ri");
-      }
-
-      const tokens = this.tokenService.generateTokens(user.id);
-      await this.tokenService.saveToken(tokens.refreshToken, user.id);
-      await this.redisService.deleteBlock(redisUserKey, user.id);
-      return { ...user, ...tokens };
-    } catch (error) {
-      throw error;
+    if (!isPasswordValid) {
+      throw new UnauthorizedException("Email yoki parol noto'g'ri");
     }
+
+    const tokens = this.tokenService.generateTokens(user.id);
+    await this.tokenService.saveToken(tokens.refreshToken, user.id);
+    await this.redisService.deleteBlock(redisUserKey, user.id);
+    return { ...user, ...tokens };
   }
 
   async refresh(refreshToken: string) {
-    try {
-      const payload = this.tokenService.validateRefreshToken(refreshToken);
-      if (!payload) throw new UnauthorizedException('Yaroqsiz token');
+    const payload = this.tokenService.validateRefreshToken(refreshToken);
+    if (!payload) throw new UnauthorizedException('Yaroqsiz token');
 
-      const tokenDb = await this.tokenService.findToken(refreshToken);
-      if (!tokenDb) throw new UnauthorizedException('Token topilmadi');
+    const tokenDb = await this.tokenService.findToken(refreshToken);
+    if (!tokenDb) throw new UnauthorizedException('Token topilmadi');
 
-      const user = await this.prismaService.user.findUnique({
-        where: { id: payload.userId },
-      });
+    const user = await this.prismaService.user.findUnique({
+      where: { id: payload.userId },
+    });
 
-      const tokens = this.tokenService.generateTokens(user.id);
-      await this.tokenService.saveToken(tokens.refreshToken, user.id);
-      return { ...user, ...tokens };
-    } catch (error) {
-      throw error;
-    }
+    const tokens = this.tokenService.generateTokens(user.id);
+    await this.tokenService.saveToken(tokens.refreshToken, user.id);
+    return { ...user, ...tokens };
   }
 
   async findOrCreateSocialProfile(

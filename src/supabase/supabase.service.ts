@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
@@ -16,62 +20,98 @@ export class SupabaseService {
   }
 
   async uploadVideo(file: Express.Multer.File) {
-    const fileBuffer = fs.readFileSync(file.path);
-    const fileName = `${Date.now()}-${file.originalname}`;
+    try {
+      const fileBuffer = fs.readFileSync(file.path);
+      const fileName = `${Date.now()}-${file.originalname}`;
 
-    const { data, error } = await this.supabase.storage
-      .from('lessons-videos')
-      .upload(fileName, fileBuffer, {
-        contentType: file.mimetype,
-        upsert: false,
-      });
+      const { data, error } = await this.supabase.storage
+        .from('lessons-videos')
+        .upload(fileName, fileBuffer, {
+          contentType: file.mimetype,
+          upsert: false,
+        });
 
-    if (error) throw error;
+      if (error)
+        throw new BadRequestException(
+          `Error uploading video: ${error.message}`,
+        );
 
-    const { data: publicUrl } = this.supabase.storage
-      .from('lessons-videos')
-      .getPublicUrl(fileName);
+      const { data: publicUrlData } = this.supabase.storage
+        .from('lessons-videos')
+        .getPublicUrl(fileName);
 
-    return publicUrl.publicUrl;
+      return publicUrlData.publicUrl;
+    } catch (err) {
+      if (err instanceof BadRequestException) throw err;
+      throw new InternalServerErrorException(
+        'Serverda fayl bilan ishlashda muammo yuz berdi',
+      );
+    }
   }
 
   async uploadImage(file: Express.Multer.File) {
-    const fileName = `${Date.now()}-${file.originalname}`;
-    const { data, error } = await this.supabase.storage
-      .from('courses-image')
-      .upload(fileName, file.buffer, {
-        contentType: file.mimetype,
-        upsert: false,
-      });
+    try {
+      const fileName = `${Date.now()}-${file.originalname}`;
+      const { data, error } = await this.supabase.storage
+        .from('courses-image')
+        .upload(fileName, file.buffer, {
+          contentType: file.mimetype,
+          upsert: false,
+        });
 
-    if (error) throw error;
+      if (error)
+        throw new BadRequestException(
+          `Error uploading image: ${error.message}`,
+        );
 
-    const { data: publicUrl } = this.supabase.storage
-      .from('courses-image')
-      .getPublicUrl(fileName);
+      const { data: publicUrl } = this.supabase.storage
+        .from('courses-image')
+        .getPublicUrl(fileName);
 
-    return publicUrl.publicUrl;
+      return publicUrl.publicUrl;
+    } catch (error) {
+      if (error instanceof BadRequestException) throw error;
+      throw new InternalServerErrorException(
+        'Serverda fayl bilan ishlashda muammo yuz berdi',
+      );
+    }
   }
 
   async deleteVideo(fileUrl: string) {
-    const parts = fileUrl.split('/');
-    const fileName = parts[parts.length - 1];
+    try {
+      const parts = fileUrl.split('/');
+      const fileName = parts[parts.length - 1];
 
-    const { error } = await this.supabase.storage
-      .from('lessons-videos')
-      .remove([fileName]);
+      const { error } = await this.supabase.storage
+        .from('lessons-videos')
+        .remove([fileName]);
 
-    if (error) throw error;
+      if (error)
+        throw new BadRequestException(`Error deleting video: ${error.message}`);
+    } catch (error) {
+      if (error instanceof BadRequestException) throw error;
+      throw new InternalServerErrorException(
+        'Serverda fayl bilan ishlashda muammo yuz berdi',
+      );
+    }
   }
 
   async deleteImage(fileUrl: string) {
-    const parts = fileUrl.split('/');
-    const fileName = parts[parts.length - 1];
+    try {
+      const parts = fileUrl.split('/');
+      const fileName = parts[parts.length - 1];
 
-    const { error } = await this.supabase.storage
-      .from('courses-image')
-      .remove([fileName]);
+      const { error } = await this.supabase.storage
+        .from('courses-image')
+        .remove([fileName]);
 
-    if (error) throw error;
+      if (error)
+        throw new BadRequestException(`Error deleting image: ${error.message}`);
+    } catch (error) {
+      if (error instanceof BadRequestException) throw error;
+      throw new InternalServerErrorException(
+        'Serverda fayl bilan ishlashda muammo yuz berdi',
+      );
+    }
   }
 }

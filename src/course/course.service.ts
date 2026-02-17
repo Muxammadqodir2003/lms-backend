@@ -19,43 +19,39 @@ export class CourseService {
     image: string,
     instructorId: string,
   ) {
-    try {
-      const instructor = await this.prismaService.instructorProfile.findUnique({
-        where: { userId: instructorId },
-      });
-      if (!instructor.isActive)
-        throw new BadRequestException(
-          'Siz hozirda kurs joylay olmaysiz sizning hisobingiz faollashtirilmagan iltimos admin sizni hisobingizni faollashtirirshini kuting',
-        );
-      let course = await this.prismaService.course.findUnique({
-        where: { slug: courseDto.slug },
-      });
-      if (course) throw new BadRequestException("Slug noyob bo'lishi kerak");
-      course = await this.prismaService.course.create({
-        data: {
-          ...courseDto,
-          requirements: courseDto.requirements.split(','),
-          whatsLearn: courseDto.whatsLearn.split(','),
-          tags: courseDto.tags.split(','),
-          price: +courseDto.price,
-          image,
-          instructorId,
-        },
-      });
+    const instructor = await this.prismaService.instructorProfile.findUnique({
+      where: { userId: instructorId },
+    });
+    if (!instructor.isActive)
+      throw new BadRequestException(
+        'Siz hozirda kurs joylay olmaysiz sizning hisobingiz faollashtirilmagan iltimos admin sizni hisobingizni faollashtirirshini kuting',
+      );
+    let course = await this.prismaService.course.findUnique({
+      where: { slug: courseDto.slug },
+    });
+    if (course) throw new BadRequestException("Slug noyob bo'lishi kerak");
+    course = await this.prismaService.course.create({
+      data: {
+        ...courseDto,
+        requirements: courseDto.requirements.split(','),
+        whatsLearn: courseDto.whatsLearn.split(','),
+        tags: courseDto.tags.split(','),
+        price: +courseDto.price,
+        image,
+        instructorId,
+      },
+    });
 
-      const coursesCount = await this.prismaService.course.count({
-        where: { instructorId },
-      });
+    const coursesCount = await this.prismaService.course.count({
+      where: { instructorId },
+    });
 
-      await this.prismaService.instructorProfile.update({
-        where: { userId: instructorId },
-        data: { coursesCount },
-      });
+    await this.prismaService.instructorProfile.update({
+      where: { userId: instructorId },
+      data: { coursesCount },
+    });
 
-      return course;
-    } catch (error) {
-      throw error;
-    }
+    return course;
   }
 
   async updateCourse(
@@ -118,25 +114,17 @@ export class CourseService {
   }
 
   async activeCourse(slug: string) {
-    try {
-      return await this.prismaService.course.update({
-        where: { slug },
-        data: { isPublished: true },
-      });
-    } catch (error) {
-      throw error;
-    }
+    return await this.prismaService.course.update({
+      where: { slug },
+      data: { isPublished: true },
+    });
   }
 
   async deactiveCourse(slug: string) {
-    try {
-      return await this.prismaService.course.update({
-        where: { slug },
-        data: { isPublished: false },
-      });
-    } catch (error) {
-      throw error;
-    }
+    return await this.prismaService.course.update({
+      where: { slug },
+      data: { isPublished: false },
+    });
   }
 
   async delete(slug: string, ip: string, userAgent: string) {

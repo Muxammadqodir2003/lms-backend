@@ -38,14 +38,10 @@ export class AdminService {
   }
 
   async getLogs(page: number) {
-    try {
-      return await this.prismaService.log.findMany({
-        skip: (page - 1) * 8,
-        take: 8,
-        orderBy: { createdAt: 'desc' },
-      });
-    } catch (error) {
-      throw error;
-    }
+    return await this.prismaService.log.findMany({
+      skip: (page - 1) * 8,
+      take: 8,
+      orderBy: { createdAt: 'desc' },
+    });
   }
 }

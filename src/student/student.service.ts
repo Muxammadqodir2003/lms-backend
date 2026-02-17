@@ -58,46 +58,38 @@ export class StudentService {
   }
 
   async deleteEnrollment(courseId: number, userId: string) {
-    try {
-      const enrollment = await this.prismaService.enrollement.findUnique({
-        where: { userId_courseId: { courseId, userId } },
-      });
-      if (!enrollment) throw new NotFoundException('Enrollment not found');
-      return await this.prismaService.enrollement.delete({
-        where: { userId_courseId: { courseId, userId } },
-      });
-    } catch (error) {
-      throw error;
-    }
+    const enrollment = await this.prismaService.enrollement.findUnique({
+      where: { userId_courseId: { courseId, userId } },
+    });
+    if (!enrollment) throw new NotFoundException('Enrollment not found');
+    return await this.prismaService.enrollement.delete({
+      where: { userId_courseId: { courseId, userId } },
+    });
   }
 
   async payCourses(userId: string) {
-    try {
-      await this.prismaService.enrollement.updateMany({
-        where: { userId },
-        data: { status: 'PAID' },
-      });
+    await this.prismaService.enrollement.updateMany({
+      where: { userId },
+      data: { status: 'PAID' },
+    });
 
-      const enrollments = await this.prismaService.enrollement.findMany({
-        where: { userId },
-      });
+    const enrollments = await this.prismaService.enrollement.findMany({
+      where: { userId },
+    });
 
-      const allCourses = await this.prismaService.course.findMany({
-        where: { id: { in: enrollments.map((e) => e.courseId) } },
-      });
+    const allCourses = await this.prismaService.course.findMany({
+      where: { id: { in: enrollments.map((e) => e.courseId) } },
+    });
 
-      for (const course of allCourses) {
-        await this.prismaService.instructorProfile.update({
-          where: { userId: course.instructorId },
-          data: { studentsCount: { increment: 1 } },
-        });
-        await this.prismaService.course.update({
-          where: { id: course.id },
-          data: { studentsCount: { increment: 1 } },
-        });
-      }
-    } catch (error) {
-      throw error;
+    for (const course of allCourses) {
+      await this.prismaService.instructorProfile.update({
+        where: { userId: course.instructorId },
+        data: { studentsCount: { increment: 1 } },
+      });
+      await this.prismaService.course.update({
+        where: { id: course.id },
+        data: { studentsCount: { increment: 1 } },
+      });
     }
   }
 
@@ -110,7 +102,6 @@ export class StudentService {
       if (error.code === 'P2002') {
         throw new BadRequestException('Siz bu darsni allaqachon tugatgansiz!');
       }
-      throw error;
     }
 
     const course = await this.prismaService.course.findUnique({
