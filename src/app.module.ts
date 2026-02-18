@@ -41,7 +41,7 @@ import { CommentModule } from './comment/comment.module';
             limit: 10,
           },
         ],
-        errorMessage: 'Too many requests. Please try again after a minute.',
+        errorMessage: 'Too many requests. Please try again later.',
         storage: new ThrottlerStorageRedisService(
           new Redis({
             host: config.get('REDIS_HOST'),

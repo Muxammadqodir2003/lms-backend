@@ -33,7 +33,6 @@ async function bootstrap() {
   app.use(cookieParser());
   app.enableCors({
     origin: process.env.CLIENT_URL || 'http://localhost:3000',
-    methods: ['POST', 'PUT', 'DELETE', 'GET', 'PATCH'],
     credentials: true,
   });
   await app.listen(process.env.PORT || 4000, '0.0.0.0');

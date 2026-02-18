@@ -62,8 +62,9 @@ export class AuthController {
     res.cookie('refreshToken', data.refreshToken, {
       httpOnly: true,
       maxAge: 30 * 24 * 60 * 60 * 1000,
-      sameSite: 'lax',
-      secure: false,
+      sameSite: 'none',
+      secure: true,
+      path: '/',
     });
     return data;
   }
@@ -86,8 +87,9 @@ export class AuthController {
     res.cookie('refreshToken', data.refreshToken, {
       httpOnly: true,
       maxAge: 30 * 24 * 60 * 60 * 1000,
-      sameSite: 'lax',
-      secure: false,
+      sameSite: 'none',
+      secure: true,
+      path: '/',
     });
     return data;
   }
@@ -103,8 +105,9 @@ export class AuthController {
     res.cookie('refreshToken', data.refreshToken, {
       httpOnly: true,
       maxAge: 30 * 24 * 60 * 60 * 1000,
-      sameSite: 'lax',
-      secure: false,
+      sameSite: 'none',
+      secure: true,
+      path: '/',
     });
     return data;
   }
@@ -132,8 +135,10 @@ export class AuthController {
     const data = req.user;
     res.cookie('refreshToken', data['refreshToken'], {
       httpOnly: true,
-      sameSite: 'lax',
-      secure: false,
+      sameSite: 'none',
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+      secure: true,
+      path: '/',
     });
     return res.redirect(
       `${this.config.get('CLIENT_URL')}/auth/success?token=${data['accessToken']}`,
@@ -163,8 +168,10 @@ export class AuthController {
     const data = req.user;
     res.cookie('refreshToken', data['refreshToken'], {
       httpOnly: true,
-      sameSite: 'lax',
-      secure: false,
+      sameSite: 'none',
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+      secure: true,
+      path: '/',
     });
     res.redirect(
       `${this.config.get('CLIENT_URL')}/auth/success?token=${data['accessToken']}`,
