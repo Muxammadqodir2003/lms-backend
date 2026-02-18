@@ -26,12 +26,18 @@ export class AuthGuard implements CanActivate {
     const payload = this.tokenService.validateAccessToken(token);
     if (!payload) throw new UnauthorizedException('Yaroqsiz token');
 
-    const user = await this.prisma.user.findUnique({
-      where: { id: payload.userId },
-    });
-    if (!user) throw new UnauthorizedException('Foydalanuvchi topilmadi');
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id: String(payload.userId) },
+      });
 
-    req.user = user;
-    return true;
+      if (!user) throw new UnauthorizedException('Foydalanuvchi topilmadi');
+
+      req['user'] = user;
+      return true;
+    } catch (error) {
+      console.error('DATABASE ERROR IN GUARD:', error);
+      throw new UnauthorizedException('Yaroqsiz token');
+    }
   }
 }
