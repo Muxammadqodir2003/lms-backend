@@ -31,7 +31,9 @@ export class TokenService {
   }
 
   async findToken(refreshToken: string) {
-    return this.prismaService.token.findUnique({ where: { refreshToken } });
+    return await this.prismaService.token.findUnique({
+      where: { refreshToken },
+    });
   }
 
   async saveToken(refreshToken: string, userId: string) {
