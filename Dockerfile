@@ -34,4 +34,4 @@ RUN npm install -g ts-node typescript
 EXPOSE 4000
 
 # NODE_OPTIONS Prisma 7-ga .ts config faylini o'qishga yordam beradi
-CMD ["sh", "-c", "sleep 20 && NODE_OPTIONS='--loader ts-node/esm' npx prisma migrate deploy && node dist/src/main.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/src/main.js"]
