@@ -41,7 +41,7 @@ model InstructorProfile {
   language      String
   social        String
   userId        String
-  rating        Float?
+  rating        Float?   @default(0.0)
   coursesCount  Int?     @default(0)
   studentsCount Int?     @default(0)
   isActive      Boolean  @default(false)
@@ -65,7 +65,7 @@ model Course {
   price         Int
   language      String
   image         String
-  rating        Float?
+  rating        Float?    @default(0.0)
   totalDuration Int?      @default(0)
   commentsCount Int?      @default(0)
   totalLessons  Int?      @default(0)
