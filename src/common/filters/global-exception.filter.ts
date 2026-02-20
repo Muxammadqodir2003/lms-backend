@@ -21,13 +21,17 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         ? exception.getStatus()
         : HttpStatus.INTERNAL_SERVER_ERROR;
 
+    const exceptionResponse =
+      exception instanceof HttpException ? exception.getResponse() : null;
+
     const message =
-      exception instanceof HttpException
-        ? exception.getResponse()
-        : { message: 'Internal server error', statusCode: 500 };
+      typeof exceptionResponse === 'object' && exceptionResponse !== null
+        ? (exceptionResponse as any).message ||
+          JSON.stringify(exceptionResponse)
+        : exceptionResponse || 'Internal server error';
 
     this.logger.error(
-      `Method: ${request.method} URL: ${request.url} Error: ${JSON.stringify(exception)}`,
+      `Method: ${request.method} URL: ${request.url}`,
       exception instanceof Error ? exception.stack : 'No stack trace',
     );
 
@@ -36,7 +40,10 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       statusCode: status,
       timestamp: new Date().toISOString(),
       path: request.url,
-      error: message,
+      error: {
+        message: message,
+        statusCode: status,
+      },
     });
   }
 }
