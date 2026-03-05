@@ -6,8 +6,6 @@ COPY package*.json ./
 COPY prisma ./prisma/
 COPY prisma.config.ts ./
 
-# 2. Prisma v7 TypeScript konfiguratsiyasini o'qishi uchun ts-node kerak
-RUN npm install -g ts-node typescript
 RUN npm install --force
 
 COPY . .
